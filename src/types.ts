@@ -90,7 +90,7 @@ export interface AppState {
 
 // ── Strength ──────────────────────────────────────────────────────────────────
 
-export const STRENGTH_LABELS = ["Très faible", "Faible", "Moyen", "Fort", "Très fort"];
+// STRENGTH_LABELS removed — labels are now provided via i18n (t("setup.strength.*") or t("settings.security.strength_labels"))
 export const STRENGTH_COLORS = ["#ef4444", "#f97316", "#f59e0b", "#22c55e", "#10b981"];
 
 // ── Keyboard shortcuts ─────────────────────────────────────────────────────────
@@ -110,19 +110,7 @@ export type ShortcutAction =
 
 export type ShortcutMap = Record<ShortcutAction, string>;
 
-export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
-  focus_search:   "Focaliser la recherche",
-  new_entry:      "Nouvelle entrée",
-  edit_entry:     "Modifier l'entrée sélectionnée",
-  delete_entry:   "Supprimer l'entrée sélectionnée",
-  copy_password:  "Copier le mot de passe",
-  copy_username:  "Copier l'identifiant",
-  open_entry:     "Ouvrir la connexion",
-  copy_entry:     "Copier la fiche (presse-papier interne)",
-  paste_entry:    "Coller / dupliquer la fiche",
-  navigate_up:    "Entrée précédente",
-  navigate_down:  "Entrée suivante",
-};
+// SHORTCUT_LABELS removed — labels are now provided via i18n (t("shortcuts.*"))
 
 export const DEFAULT_SHORTCUTS: ShortcutMap = {
   focus_search:   "ctrl+f",

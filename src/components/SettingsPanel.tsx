@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { type AppSettings, DEFAULT_SETTINGS } from "../hooks/useSettings";
 import { THEME_PRESETS, EDITABLE_VARS, applyTheme } from "../themes";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { QRCodeSVG } from "qrcode.react";
-import { type ShortcutAction, type ShortcutMap, SHORTCUT_LABELS, DEFAULT_SHORTCUTS, parseShortcut, formatShortcutDisplay } from "../types";
+import { type ShortcutAction, type ShortcutMap, DEFAULT_SHORTCUTS, parseShortcut, formatShortcutDisplay } from "../types";
 
 interface Props {
   settings: AppSettings;
@@ -20,6 +21,7 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose, dbP
   // Local draft — only applied on Save
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
   const [dirty, setDirty] = useState(false);
+  const { t } = useTranslation();
 
   const update = (patch: Partial<AppSettings>) => {
     const next = { ...draft, ...patch };
@@ -52,12 +54,12 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose, dbP
   };
 
   const TABS: Array<{ id: Tab; label: string; icon: React.FC<{size?:number}> }> = [
-    { id: "apparence",       label: "Apparence",    icon: SunIcon },
-    { id: "securite",        label: "Sécurité",     icon: ShieldIcon },
-    { id: "coffre",          label: "Coffre",       icon: HardDriveIcon },
-    { id: "authentification",label: "Authentif.",   icon: FingerprintIcon },
-    { id: "tags",            label: "Tags",         icon: TagIcon },
-    { id: "systeme",         label: "Système",      icon: ToolIcon },
+    { id: "apparence",       label: t("settings.tabs.appearance"), icon: SunIcon },
+    { id: "securite",        label: t("settings.tabs.security"),   icon: ShieldIcon },
+    { id: "coffre",          label: t("settings.tabs.vault"),      icon: HardDriveIcon },
+    { id: "authentification",label: t("settings.tabs.auth"),       icon: FingerprintIcon },
+    { id: "tags",            label: t("settings.tabs.tags"),       icon: TagIcon },
+    { id: "systeme",         label: t("settings.tabs.system"),     icon: ToolIcon },
   ];
 
   return (
@@ -68,22 +70,22 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose, dbP
           <div style={{ width: 32, height: 32, background: "var(--accent-dim)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <SettingsIcon size={16} />
           </div>
-          <h2>Paramètres {dirty && <span style={{ fontSize: 11, color: "var(--warning)", fontWeight: 400 }}>· Modifications non sauvegardées</span>}</h2>
+          <h2>{t("settings.title")} {dirty && <span style={{ fontSize: 11, color: "var(--warning)", fontWeight: 400 }}>{t("settings.unsaved")}</span>}</h2>
           <button className="btn-icon" onClick={handleClose}><XIcon /></button>
         </div>
 
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
+          {TABS.map(tab_ => (
+            <button key={tab_.id} onClick={() => setTab(tab_.id)} style={{
               flex: 1, padding: "11px 4px", background: "none", border: "none", cursor: "pointer",
               fontSize: 12, fontWeight: 500, fontFamily: "inherit",
-              color: tab === t.id ? "var(--accent)" : "var(--text-2)",
-              borderBottom: `2px solid ${tab === t.id ? "var(--accent)" : "transparent"}`,
+              color: tab === tab_.id ? "var(--accent)" : "var(--text-2)",
+              borderBottom: `2px solid ${tab === tab_.id ? "var(--accent)" : "transparent"}`,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
               transition: "color 0.12s",
             }}>
-              <t.icon size={13} /> {t.label}
+              <tab_.icon size={13} /> {tab_.label}
             </button>
           ))}
         </div>
@@ -100,9 +102,9 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose, dbP
 
         {/* Footer */}
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={handleClose}>Fermer</button>
+          <button className="btn btn-ghost" onClick={handleClose}>{t("common.close")}</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={!dirty}>
-            <SaveIcon size={13} /> Enregistrer
+            <SaveIcon size={13} /> {t("common.save")}
           </button>
         </div>
       </div>
@@ -112,13 +114,14 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose, dbP
 
 // ── Apparence ─────────────────────────────────────────────────────────────────
 function ApparenceTab({ draft, update }: { draft: AppSettings; update: (p: Partial<AppSettings>) => void }) {
+  const { t } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(() => Object.keys(draft.customThemeVars).length > 0);
   const currentPreset = THEME_PRESETS.find(p => p.id === draft.themeId) ?? THEME_PRESETS[0];
 
   return (
     <div className="modal-body" style={{ gap: 20 }}>
       <div>
-        <div className="field-label" style={{ marginBottom: 10 }}>Thème</div>
+        <div className="field-label" style={{ marginBottom: 10 }}>{t("settings.appearance.theme")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
           {THEME_PRESETS.map(preset => (
             <button
@@ -138,17 +141,17 @@ function ApparenceTab({ draft, update }: { draft: AppSettings; update: (p: Parti
                 <div style={{ position: "absolute", right: 6, top: 8, width: "50%", height: 8, borderRadius: 3, background: preset.vars["--accent"] ?? "#3b82f6" }} />
                 <div style={{ position: "absolute", right: 6, top: 20, width: "38%", height: 6, borderRadius: 3, background: preset.vars["--text-3"] ?? "#64748b", opacity: 0.6 }} />
               </div>
-              <span style={{ fontSize: 11, fontWeight: 500, color: preset.vars["--text-1"] ?? "var(--text-1)" }}>{preset.name}</span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: preset.vars["--text-1"] ?? "var(--text-1)" }}>{t(`themes.${preset.id.replace(/-/g, "_")}`)}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Zebra stripes */}
-      <SettingRow icon={<StripesIcon size={15} />} label="Lignes alternées" description="Colore une ligne sur deux dans la liste des entrées pour améliorer la lisibilité">
+      <SettingRow icon={<StripesIcon size={15} />} label={t("settings.appearance.zebra_stripes")} description={t("settings.appearance.zebra_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ zebraStripes: true })} className={draft.zebraStripes ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activées</button>
-          <button onClick={() => update({ zebraStripes: false })} className={!draft.zebraStripes ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivées</button>
+          <button onClick={() => update({ zebraStripes: true })} className={draft.zebraStripes ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled_f")}</button>
+          <button onClick={() => update({ zebraStripes: false })} className={!draft.zebraStripes ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled_f")}</button>
         </div>
       </SettingRow>
 
@@ -160,7 +163,7 @@ function ApparenceTab({ draft, update }: { draft: AppSettings; update: (p: Parti
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <ToolIcon size={13} /> Apparence avancée — personnaliser les couleurs
+            <ToolIcon size={13} /> {t("settings.appearance.advanced_toggle")}
           </span>
           <ChevronIcon size={13} style={{ transform: showAdvanced ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
         </button>
@@ -184,6 +187,7 @@ function AdvancedThemeEditor({ currentPreset, customVars, onChange, onReset }: {
   onChange: (vars: Record<string, string>) => void;
   onReset: () => void;
 }) {
+  const { t } = useTranslation();
   const effectiveVars = { ...currentPreset.vars, ...customVars };
 
   const handleColorChange = (key: string, value: string) => {
@@ -202,10 +206,10 @@ function AdvancedThemeEditor({ currentPreset, customVars, onChange, onReset }: {
       padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10,
     }}>
       <div style={{ fontSize: 11, color: "var(--text-3)" }}>
-        Modifiez les couleurs ci-dessous — l'aperçu est immédiat. Sauvegardez pour conserver.
+        {t("settings.appearance.advanced_desc")}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {editableKeys.map(({ key, label }) => (
+        {editableKeys.map(({ key }) => (
           <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input
               type="color"
@@ -214,7 +218,7 @@ function AdvancedThemeEditor({ currentPreset, customVars, onChange, onReset }: {
               style={{ width: 28, height: 28, border: "1px solid var(--border-light)", borderRadius: 6, cursor: "pointer", padding: 2, background: "var(--bg-hover)" }}
             />
             <div>
-              <div style={{ fontSize: 12, color: "var(--text-1)" }}>{label}</div>
+              <div style={{ fontSize: 12, color: "var(--text-1)" }}>{t(`theme_vars.${key}`)}</div>
               <div style={{ fontSize: 10, color: "var(--text-3)", fontFamily: "monospace" }}>{effectiveVars[key]}</div>
             </div>
             {customVars[key] && (
@@ -222,7 +226,7 @@ function AdvancedThemeEditor({ currentPreset, customVars, onChange, onReset }: {
                 const next = { ...customVars };
                 delete next[key];
                 onChange(next);
-              }} title="Réinitialiser">
+              }} title={t("settings.appearance.reset_color")}>
                 <XIcon size={11} />
               </button>
             )}
@@ -231,7 +235,7 @@ function AdvancedThemeEditor({ currentPreset, customVars, onChange, onReset }: {
       </div>
       {Object.keys(customVars).length > 0 && (
         <button className="btn btn-ghost btn-sm" onClick={onReset} style={{ alignSelf: "flex-start" }}>
-          Réinitialiser tous les personnalisations
+          {t("settings.appearance.reset_all")}
         </button>
       )}
     </div>
@@ -240,6 +244,7 @@ function AdvancedThemeEditor({ currentPreset, customVars, onChange, onReset }: {
 
 // ── Sécurité ──────────────────────────────────────────────────────────────────
 function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partial<AppSettings>) => void }) {
+  const { t } = useTranslation();
   const QUICK = [5, 15, 30, 60];
   const [customTimeout, setCustomTimeout] = useState<string>(() =>
     QUICK.includes(draft.lockTimeoutMinutes) || draft.lockTimeoutMinutes === 0
@@ -269,18 +274,18 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
     return Math.min(4, Math.max(0, score - 1));
   })();
 
-  const cpStrengthLabel = ["Très faible", "Faible", "Moyen", "Fort", "Très fort"][cpStrength];
+  const cpStrengthLabel = (t("settings.security.strength_labels", { returnObjects: true }) as string[])[cpStrength] ?? "";
   const cpStrengthColor = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#16a34a"][cpStrength];
 
   const handleChangePw = async () => {
     setCpError("");
-    if (!cpCurrent) { setCpError("Entrez le mot de passe actuel."); return; }
-    if (cpNew.length < 6) { setCpError("Le nouveau mot de passe doit faire au moins 6 caractères."); return; }
-    if (cpNew !== cpConfirm) { setCpError("Les mots de passe ne correspondent pas."); return; }
+    if (!cpCurrent) { setCpError(t("settings.security.enter_current")); return; }
+    if (cpNew.length < 6) { setCpError(t("settings.security.pw_too_short")); return; }
+    if (cpNew !== cpConfirm) { setCpError(t("settings.security.pw_mismatch")); return; }
     setCpLoading(true);
     try {
       await invoke("change_master_password", { currentPassword: cpCurrent, newPassword: cpNew });
-      setCpSuccess("Mot de passe maître changé avec succès.");
+      setCpSuccess(t("settings.security.change_pw_success"));
       setCpCurrent(""); setCpNew(""); setCpConfirm("");
       setTimeout(() => { setShowChangePw(false); setCpSuccess(""); }, 2500);
     } catch (e) {
@@ -294,17 +299,17 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
     <div className="modal-body" style={{ gap: 18 }}>
 
       {/* Lock timeout */}
-      <SettingRow icon={<ClockIcon size={15} />} label="Verrouillage automatique" description="Durée d'inactivité avant le verrouillage du coffre">
+      <SettingRow icon={<ClockIcon size={15} />} label={t("settings.security.auto_lock")} description={t("settings.security.auto_lock_desc")}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
           {QUICK.map(v => (
             <button key={v} onClick={() => update({ lockTimeoutMinutes: v })}
               className={draft.lockTimeoutMinutes === v ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>
-              {v < 60 ? `${v} min` : "1 heure"}
+              {v < 60 ? `${v} ${t("common.minutes_short")}` : t("common.hour")}
             </button>
           ))}
           <button onClick={() => update({ lockTimeoutMinutes: 0 })}
             className={draft.lockTimeoutMinutes === 0 ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>
-            Jamais
+            {t("common.never")}
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input
@@ -316,54 +321,54 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
                 setCustomTimeout(v);
                 if (v) update({ lockTimeoutMinutes: Number(v) });
               }}
-              title="Valeur personnalisée en minutes"
+              title={t("common.minutes_short")}
             />
             <span style={{ fontSize: 11, color: "var(--text-3)" }}>min</span>
           </div>
         </div>
         {draft.lockTimeoutMinutes > 0 && !QUICK.includes(draft.lockTimeoutMinutes) && (
-          <div style={{ fontSize: 11, color: "var(--accent)" }}>Verrouillage dans {draft.lockTimeoutMinutes} minutes</div>
+          <div style={{ fontSize: 11, color: "var(--accent)" }}>{t("settings.security.lock_in", { count: draft.lockTimeoutMinutes })}</div>
         )}
       </SettingRow>
 
       <div className="divider" />
 
       {/* Clipboard auto-clear */}
-      <SettingRow icon={<ClipboardIcon size={15} />} label="Effacement automatique du presse-papiers" description="Efface le contenu copié après le délai configuré (0 = désactivé)">
+      <SettingRow icon={<ClipboardIcon size={15} />} label={t("settings.security.clipboard_clear")} description={t("settings.security.clipboard_clear_desc")}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
           {[0, 15, 30, 60, 120].map(v => (
             <button key={v}
               onClick={() => update({ clipboardClearSeconds: v })}
               className={draft.clipboardClearSeconds === v ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>
-              {v === 0 ? "Désactivé" : v < 60 ? `${v} s` : `${v / 60} min`}
+              {v === 0 ? t("settings.security.disabled_val") : v < 60 ? `${v} s` : `${v / 60} min`}
             </button>
           ))}
         </div>
         {draft.clipboardClearSeconds > 0 && (
           <div style={{ fontSize: 11, color: "var(--accent)" }}>
-            Le presse-papiers sera effacé {draft.clipboardClearSeconds}s après chaque copie.
+            {t("settings.security.clipboard_clear_info", { seconds: draft.clipboardClearSeconds })}
           </div>
         )}
       </SettingRow>
 
-      <SettingRow icon={<LockClipIcon size={15} />} label="Effacer au verrouillage" description="Vide le presse-papiers à chaque verrouillage ou fermeture du coffre">
+      <SettingRow icon={<LockClipIcon size={15} />} label={t("settings.security.clear_on_lock")} description={t("settings.security.clear_on_lock_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ clipboardClearOnLock: true })} className={draft.clipboardClearOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activé</button>
-          <button onClick={() => update({ clipboardClearOnLock: false })} className={!draft.clipboardClearOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivé</button>
+          <button onClick={() => update({ clipboardClearOnLock: true })} className={draft.clipboardClearOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled")}</button>
+          <button onClick={() => update({ clipboardClearOnLock: false })} className={!draft.clipboardClearOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled")}</button>
         </div>
       </SettingRow>
 
-      <SettingRow icon={<MinimizeIcon size={15} />} label="Réduire la fenêtre au verrouillage" description="Minimise automatiquement la fenêtre à chaque verrouillage du coffre">
+      <SettingRow icon={<MinimizeIcon size={15} />} label={t("settings.security.minimize_on_lock")} description={t("settings.security.minimize_on_lock_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ minimizeOnLock: true })} className={draft.minimizeOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activé</button>
-          <button onClick={() => update({ minimizeOnLock: false })} className={!draft.minimizeOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivé</button>
+          <button onClick={() => update({ minimizeOnLock: true })} className={draft.minimizeOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled")}</button>
+          <button onClick={() => update({ minimizeOnLock: false })} className={!draft.minimizeOnLock ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled")}</button>
         </div>
       </SettingRow>
 
-      <SettingRow icon={<ClockXIcon size={15} />} label="Masquer les entrées expirées" description="Exclut les fiches expirées de toutes les vues (sauf la catégorie « Expirés »)">
+      <SettingRow icon={<ClockXIcon size={15} />} label={t("settings.security.hide_expired")} description={t("settings.security.hide_expired_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ excludeExpiredFromSearch: true })} className={draft.excludeExpiredFromSearch ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activé</button>
-          <button onClick={() => update({ excludeExpiredFromSearch: false })} className={!draft.excludeExpiredFromSearch ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivé</button>
+          <button onClick={() => update({ excludeExpiredFromSearch: true })} className={draft.excludeExpiredFromSearch ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled")}</button>
+          <button onClick={() => update({ excludeExpiredFromSearch: false })} className={!draft.excludeExpiredFromSearch ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled")}</button>
         </div>
       </SettingRow>
 
@@ -371,40 +376,39 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
 
       {/* Security info */}
       <div className="info-msg" style={{ fontSize: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>Niveau de sécurité du chiffrement</div>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>{t("settings.security.encryption_title")}</div>
         <div style={{ lineHeight: 1.7 }}>
-          <b>AES-256-GCM</b> — identique à FIPS 197 / chiffrement militaire, avec authentification intégrée (AEAD).<br />
-          <b>Argon2id</b> — dérivation de clé mémoire-intensive, résistante aux attaques GPU/ASIC et rainbow tables.
+          {t("settings.security.encryption_desc")}
         </div>
       </div>
 
       <div className="divider" />
 
       {/* KDF params */}
-      <SettingRow icon={<ShieldIcon size={15} />} label="Paramètres Argon2id" description="Résistance aux attaques par force brute — valeurs plus élevées = plus lent à déverrouiller">
+      <SettingRow icon={<ShieldIcon size={15} />} label={t("settings.security.kdf_title")} description={t("settings.security.kdf_desc")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div className="field-group">
-            <label className="field-label">Mémoire (KiB) — actuel : {(draft.kdfMemory / 1024).toFixed(0)} MiB</label>
+            <label className="field-label">{t("settings.security.kdf_memory", { value: (draft.kdfMemory / 1024).toFixed(0) })}</label>
             <input type="range" className="range-input" min={16384} max={524288} step={16384}
               value={draft.kdfMemory} onChange={e => update({ kdfMemory: Number(e.target.value) })} />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-3)" }}>
-              <span>16 MiB (rapide)</span><span>512 MiB (très sûr)</span>
+              <span>{t("settings.security.kdf_memory_fast")}</span><span>{t("settings.security.kdf_memory_safe")}</span>
             </div>
           </div>
           <div className="field-group">
-            <label className="field-label">Itérations — actuel : {draft.kdfTime}</label>
+            <label className="field-label">{t("settings.security.kdf_iterations", { value: draft.kdfTime })}</label>
             <input type="range" className="range-input" min={1} max={10} step={1}
               value={draft.kdfTime} onChange={e => update({ kdfTime: Number(e.target.value) })} />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-3)" }}>
-              <span>1 (rapide)</span><span>10 (lent)</span>
+              <span>{t("settings.security.kdf_fast")}</span><span>{t("settings.security.kdf_slow")}</span>
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
-              { label: "Rapide",    mem: 32768,  time: 2 },
-              { label: "Équilibré", mem: 65536,  time: 3 },
-              { label: "Fort",      mem: 131072, time: 4 },
-              { label: "Maximum",   mem: 262144, time: 6 },
+              { label: t("settings.security.kdf_preset_fast"),     mem: 32768,  time: 2 },
+              { label: t("settings.security.kdf_preset_balanced"), mem: 65536,  time: 3 },
+              { label: t("settings.security.kdf_preset_strong"),   mem: 131072, time: 4 },
+              { label: t("settings.security.kdf_preset_max"),      mem: 262144, time: 6 },
             ].map(p => (
               <button key={p.label}
                 onClick={() => update({ kdfMemory: p.mem, kdfTime: p.time })}
@@ -414,7 +418,7 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
             ))}
           </div>
           <div className="info-msg" style={{ fontSize: 11 }}>
-            <b>Conseil :</b> 64 MiB + 3 itérations est le bon équilibre sécurité/vitesse. Ces paramètres ne s'appliquent qu'aux nouvelles bases créées.
+            {t("settings.security.kdf_tip")}
           </div>
         </div>
       </SettingRow>
@@ -422,23 +426,23 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
       <div className="divider" />
 
       {/* Change master password */}
-      <SettingRow icon={<KeyIcon size={15} />} label="Changer le mot de passe maître" description="Re-chiffre le coffre avec un nouveau mot de passe et un nouveau sel Argon2">
+      <SettingRow icon={<KeyIcon size={15} />} label={t("settings.security.change_pw")} description={t("settings.security.change_pw_desc")}>
         {!showChangePw ? (
           <button className="btn btn-ghost btn-sm" onClick={() => { setShowChangePw(true); setCpError(""); setCpSuccess(""); }}>
-            Modifier…
+            {t("settings.security.change_pw_btn")}
           </button>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
             {/* Current password */}
             <div className="field-group">
-              <label className="field-label">Mot de passe actuel</label>
+              <label className="field-label">{t("settings.security.current_pw")}</label>
               <div className="input-wrap">
                 <input
                   className="input"
                   type={showCpCurrent ? "text" : "password"}
                   value={cpCurrent}
                   onChange={e => setCpCurrent(e.target.value)}
-                  placeholder="Mot de passe actuel"
+                  placeholder={t("settings.security.current_pw")}
                   disabled={cpLoading}
                   autoComplete="current-password"
                 />
@@ -452,14 +456,14 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
 
             {/* New password */}
             <div className="field-group">
-              <label className="field-label">Nouveau mot de passe</label>
+              <label className="field-label">{t("settings.security.new_pw")}</label>
               <div className="input-wrap">
                 <input
                   className="input"
                   type={showCpNew ? "text" : "password"}
                   value={cpNew}
                   onChange={e => setCpNew(e.target.value)}
-                  placeholder="Nouveau mot de passe"
+                  placeholder={t("settings.security.new_pw")}
                   disabled={cpLoading}
                   autoComplete="new-password"
                 />
@@ -483,14 +487,14 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
 
             {/* Confirm new password */}
             <div className="field-group">
-              <label className="field-label">Confirmer le nouveau mot de passe</label>
+              <label className="field-label">{t("settings.security.confirm_new_pw")}</label>
               <div className="input-wrap">
                 <input
                   className="input"
                   type="password"
                   value={cpConfirm}
                   onChange={e => setCpConfirm(e.target.value)}
-                  placeholder="Confirmer le nouveau mot de passe"
+                  placeholder={t("settings.security.confirm_new_pw")}
                   disabled={cpLoading}
                   autoComplete="new-password"
                   onKeyDown={e => e.key === "Enter" && handleChangePw()}
@@ -514,10 +518,10 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn btn-primary btn-sm" onClick={handleChangePw} disabled={cpLoading || !cpCurrent || !cpNew || !cpConfirm}>
                 {cpLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : null}
-                {cpLoading ? "Changement…" : "Valider"}
+                {cpLoading ? t("settings.security.changing") : t("settings.security.change_pw_action")}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => { setShowChangePw(false); setCpCurrent(""); setCpNew(""); setCpConfirm(""); setCpError(""); }} disabled={cpLoading}>
-                Annuler
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -529,6 +533,7 @@ function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partia
 
 // ── Authentification ──────────────────────────────────────────────────────────
 function AuthTab({ settings: _settings }: { settings: AppSettings }) {
+  const { t } = useTranslation();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricRegistered, setBiometricRegistered] = useState(false);
   const [bioLoading, setBioLoading] = useState(false);
@@ -561,7 +566,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
     try {
       await invoke("register_biometric", { masterPassword: bioPw });
       setBiometricRegistered(true); setShowBioPw(false); setBioPw("");
-      setBioSuccess("Biométrie activée !"); setTimeout(() => setBioSuccess(""), 3000);
+      setBioSuccess(t("settings.auth.biometric_success_msg")); setTimeout(() => setBioSuccess(""), 3000);
     } catch (e) { setBioError(String(e)); }
     finally { setBioLoading(false); }
   };
@@ -583,7 +588,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
       await invoke("unregister_biometric");
       setBiometricRegistered(false);
       setShowBioDisable(false); setBioDisablePw("");
-      setBioSuccess("Biométrie désactivée."); setTimeout(() => setBioSuccess(""), 3000);
+      setBioSuccess(t("settings.auth.biometric_disabled_msg")); setTimeout(() => setBioSuccess(""), 3000);
     } catch (e) { setBioError(String(e)); }
     finally { setBioLoading(false); }
   };
@@ -608,7 +613,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
       await invoke("setup_totp_unlock_confirm", { masterPassword: totpMasterPw, totpCode, secret: totpSecret });
       setTotpRegistered(true);
       setTotpStep("idle"); setTotpMasterPw(""); setTotpSecret(""); setTotpCode("");
-      setTotpSuccess("Application TOTP activée !"); setTimeout(() => setTotpSuccess(""), 4000);
+      setTotpSuccess(t("settings.auth.totp_success_msg")); setTimeout(() => setTotpSuccess(""), 4000);
     } catch (e) { setTotpError(String(e)); }
     finally { setTotpLoading(false); }
   };
@@ -631,7 +636,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
       await invoke("disable_totp_unlock");
       setTotpRegistered(false);
       setShowTotpDisable(false); setTotpDisableCode("");
-      setTotpSuccess("TOTP désactivé."); setTimeout(() => setTotpSuccess(""), 3000);
+      setTotpSuccess(t("settings.auth.totp_disabled_msg")); setTimeout(() => setTotpSuccess(""), 3000);
     } catch (e) { setTotpError(String(e)); }
     finally { setTotpLoading(false); }
   };
@@ -639,31 +644,31 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
   return (
     <div className="modal-body" style={{ gap: 12 }}>
       <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.7 }}>
-        Combinez votre mot de passe maître avec une méthode d'authentification rapide pour déverrouiller le coffre sans le ressaisir.
+        {t("settings.auth.intro")}
       </div>
 
       {/* ── Biométrie ── */}
       <AuthCard
         icon={<FingerprintIcon size={18} />}
-        title="Biométrie / Windows Hello"
+        title={t("settings.auth.biometric")}
         description={biometricAvailable
-          ? "Empreinte digitale ou reconnaissance faciale (Windows Hello)"
-          : "Aucun capteur biométrique détecté sur cet appareil"}
+          ? t("settings.auth.biometric_desc_available")
+          : t("settings.auth.biometric_desc_unavailable")}
         available={biometricAvailable}
         registered={biometricRegistered}
-        unavailableMsg="Non disponible sur cet appareil"
+        unavailableMsg={t("settings.auth.biometric_not_available")}
         onEnable={() => setShowBioPw(!showBioPw)}
         onDisable={handleUnregisterBio}
         loading={bioLoading}
       >
         {showBioPw && !biometricRegistered && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "var(--text-2)" }}>Entrez votre mot de passe maître pour l'associer :</div>
+            <div style={{ fontSize: 12, color: "var(--text-2)" }}>{t("settings.auth.biometric_enter_pw")}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <input className="input" type="password" value={bioPw} onChange={e => setBioPw(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleRegisterBio()} placeholder="Mot de passe maître" autoFocus />
+                onKeyDown={e => e.key === "Enter" && handleRegisterBio()} placeholder={t("unlock.master_password")} autoFocus />
               <button className="btn btn-primary btn-sm" onClick={handleRegisterBio} disabled={bioLoading || !bioPw}>
-                {bioLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "Confirmer"}
+                {bioLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : t("common.confirm")}
               </button>
             </div>
           </div>
@@ -671,17 +676,17 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
         {showBioDisable && biometricRegistered && (
           <div style={{ marginTop: 10, border: "1px solid var(--danger)", borderRadius: 8, padding: "12px 14px",
             background: "rgba(239,68,68,0.04)", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "var(--text-1)", fontWeight: 600 }}>Confirmer la désactivation</div>
-            <div style={{ fontSize: 12, color: "var(--text-2)" }}>Entrez votre mot de passe maître pour confirmer :</div>
+            <div style={{ fontSize: 12, color: "var(--text-1)", fontWeight: 600 }}>{t("settings.auth.biometric_disable_title")}</div>
+            <div style={{ fontSize: 12, color: "var(--text-2)" }}>{t("settings.auth.biometric_disable_enter_pw")}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <input className="input" type="password" value={bioDisablePw} onChange={e => setBioDisablePw(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleConfirmUnregisterBio()}
-                placeholder="Mot de passe maître" autoFocus />
+                placeholder={t("unlock.master_password")} autoFocus />
               <button className="btn btn-danger btn-sm" onClick={handleConfirmUnregisterBio} disabled={bioLoading || !bioDisablePw}>
-                {bioLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "Désactiver"}
+                {bioLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : t("settings.auth.biometric_deactivate")}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => { setShowBioDisable(false); setBioDisablePw(""); setBioError(""); }}>
-                Annuler
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -693,8 +698,8 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
       {/* ── TOTP ── */}
       <AuthCard
         icon={<PhoneIcon size={18} />}
-        title="Application d'authentification (TOTP)"
-        description="Google Authenticator, Microsoft Authenticator, Authy, Bitwarden Authenticator…"
+        title={t("settings.auth.totp")}
+        description={t("settings.auth.totp_desc_full")}
         available={true}
         registered={totpRegistered}
         unavailableMsg=""
@@ -705,12 +710,12 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
         {/* Step 0 : enter master pw before generating secret */}
         {totpStep === "setup" && !totpSecret && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "var(--text-2)" }}>Entrez votre mot de passe maître :</div>
+            <div style={{ fontSize: 12, color: "var(--text-2)" }}>{t("settings.auth.totp_enter_pw")}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <input className="input" type="password" value={totpMasterPw} onChange={e => setTotpMasterPw(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleInitTotp()} placeholder="Mot de passe maître" autoFocus />
+                onKeyDown={e => e.key === "Enter" && handleInitTotp()} placeholder={t("unlock.master_password")} autoFocus />
               <button className="btn btn-primary btn-sm" onClick={handleInitTotp} disabled={totpLoading || !totpMasterPw}>
-                {totpLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "Générer"}
+                {totpLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : t("settings.auth.totp_generate")}
               </button>
             </div>
           </div>
@@ -720,7 +725,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
         {totpStep === "setup" && totpSecret && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
             <div className="info-msg" style={{ fontSize: 12 }}>
-              Scannez ce QR code avec votre application (Google Authenticator, Authy…), puis saisissez le code à 6 chiffres affiché.
+              {t("security_setup.totp_qr_info")}
             </div>
 
             {/* QR Code */}
@@ -736,7 +741,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
             {/* Fallback: show secret */}
             <details style={{ fontSize: 11 }}>
               <summary style={{ cursor: "pointer", color: "var(--text-3)", userSelect: "none" }}>
-                Impossible de scanner ? Saisissez manuellement le secret
+                {t("security_setup.totp_manual")}
               </summary>
               <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
                 <code style={{
@@ -746,7 +751,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
                 }}>
                   {totpSecret}
                 </code>
-                <button className="btn-icon" onClick={() => navigator.clipboard?.writeText(totpSecret)} title="Copier le secret">
+                <button className="btn-icon" onClick={() => navigator.clipboard?.writeText(totpSecret)} title={t("security_setup.totp_copy_secret")}>
                   <CopyIcon size={13} />
                 </button>
               </div>
@@ -755,7 +760,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
             <div className="divider" />
 
             <div className="field-group">
-              <div className="field-label">Code de vérification (6 chiffres)</div>
+              <div className="field-label">{t("security_setup.totp_code_label")}</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input className="input input-mono" placeholder="000000" maxLength={6}
                   value={totpCode} onChange={e => setTotpCode(e.target.value.replace(/\D/g, ""))}
@@ -764,11 +769,11 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
                   autoFocus />
                 <button className="btn btn-primary btn-sm" onClick={handleConfirmTotp}
                   disabled={totpLoading || totpCode.length !== 6}>
-                  {totpLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "Vérifier & Activer"}
+                  {totpLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : t("security_setup.totp_verify_activate")}
                 </button>
                 <button className="btn btn-ghost btn-sm"
                   onClick={() => { setTotpStep("idle"); setTotpMasterPw(""); setTotpSecret(""); setTotpCode(""); }}>
-                  Annuler
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -777,8 +782,8 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
         {showTotpDisable && totpRegistered && (
           <div style={{ marginTop: 10, border: "1px solid var(--danger)", borderRadius: 8, padding: "12px 14px",
             background: "rgba(239,68,68,0.04)", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "var(--text-1)", fontWeight: 600 }}>Confirmer la désactivation</div>
-            <div style={{ fontSize: 12, color: "var(--text-2)" }}>Entrez le code TOTP actuel (6 chiffres) pour confirmer :</div>
+            <div style={{ fontSize: 12, color: "var(--text-1)", fontWeight: 600 }}>{t("settings.auth.totp_disable_title")}</div>
+            <div style={{ fontSize: 12, color: "var(--text-2)" }}>{t("settings.auth.totp_disable_enter_code")}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <input className="input input-mono" placeholder="000000" maxLength={6}
                 value={totpDisableCode} onChange={e => setTotpDisableCode(e.target.value.replace(/\D/g, ""))}
@@ -786,10 +791,10 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
                 style={{ letterSpacing: 4, textAlign: "center", maxWidth: 120 }} autoFocus />
               <button className="btn btn-danger btn-sm" onClick={handleConfirmDisableTotp}
                 disabled={totpLoading || totpDisableCode.length !== 6}>
-                {totpLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "Désactiver"}
+                {totpLoading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : t("settings.auth.totp_deactivate")}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => { setShowTotpDisable(false); setTotpDisableCode(""); setTotpError(""); }}>
-                Annuler
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -801,11 +806,11 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
       {/* ── FIDO2 / YubiKey ── */}
       <AuthCard
         icon={<KeyIcon size={18} />}
-        title="Clé de sécurité FIDO2 / YubiKey"
-        description="Clé matérielle USB ou NFC compatible FIDO2 (YubiKey 5, Google Titan, Nitrokey…)"
+        title={t("settings.auth.fido2_title")}
+        description={t("settings.auth.fido2_desc")}
         available={false}
         registered={false}
-        unavailableMsg="Nécessite le gestionnaire yubikey — prochainement"
+        unavailableMsg={t("settings.auth.fido2_unavailable")}
         onEnable={() => {}}
         onDisable={() => {}}
         loading={false}
@@ -820,6 +825,7 @@ function AuthCard({ icon, title, description, available, registered, unavailable
   onEnable: () => void; onDisable: () => void; loading: boolean;
   children?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{ border: "1px solid var(--border-light)", borderRadius: 10, padding: "14px 16px", opacity: available ? 1 : 0.65 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -834,7 +840,7 @@ function AuthCard({ icon, title, description, available, registered, unavailable
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-1)", display: "flex", alignItems: "center", gap: 8 }}>
             {title}
-            {registered && <span className="badge badge-ok">Activé</span>}
+            {registered && <span className="badge badge-ok">{t("common.enabled")}</span>}
             {!available && <span className="badge badge-warn">{unavailableMsg}</span>}
           </div>
           <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 3 }}>{description}</div>
@@ -846,7 +852,7 @@ function AuthCard({ icon, title, description, available, registered, unavailable
             disabled={loading}
             style={{ flexShrink: 0 }}
           >
-            {loading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : registered ? "Désactiver" : "Activer"}
+            {loading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : registered ? t("settings.auth.disable_btn") : t("settings.auth.enable_btn")}
           </button>
         )}
       </div>
@@ -861,6 +867,7 @@ const BUILTIN_CATEGORIES = ["Travail", "Personnel", "Social"];
 function TagRow({ name, color, onColorChange, onRemove }: {
   name: string; color: string; onColorChange: (c: string) => void; onRemove?: () => void;
 }) {
+  const { t } = useTranslation();
   const [hexInput, setHexInput] = useState(color || "#888888");
 
   useEffect(() => {
@@ -879,7 +886,7 @@ function TagRow({ name, color, onColorChange, onRemove }: {
       border: "1px solid var(--border)",
     }}>
       {/* Color swatch — clicking opens native color picker */}
-      <label title="Changer la couleur" style={{ cursor: "pointer", flexShrink: 0, position: "relative", width: 22, height: 22 }}>
+      <label title={t("settings.tags_tab.change_color")} style={{ cursor: "pointer", flexShrink: 0, position: "relative", width: 22, height: 22 }}>
         <div style={{
           width: 22, height: 22, borderRadius: 5, border: "2px solid var(--border)",
           background: color || "#888888", cursor: "pointer",
@@ -909,7 +916,7 @@ function TagRow({ name, color, onColorChange, onRemove }: {
       />
       <span style={{ flex: 1, fontSize: 13, color: color || "var(--text-1)" }}>{name}</span>
       {onRemove && (
-        <button className="btn-icon" onClick={onRemove} title="Supprimer" style={{ color: "var(--danger)" }}>
+        <button className="btn-icon" onClick={onRemove} title={t("settings.tags_tab.remove")} style={{ color: "var(--danger)" }}>
           <TrashIcon size={13} />
         </button>
       )}
@@ -918,6 +925,7 @@ function TagRow({ name, color, onColorChange, onRemove }: {
 }
 
 function CategoriesTab({ draft, update }: { draft: AppSettings; update: (p: Partial<AppSettings>) => void }) {
+  const { t } = useTranslation();
   const [newCat, setNewCat] = useState("");
   const allCustom = draft.customCategories;
   const tagColors = draft.tagColors ?? {};
@@ -942,28 +950,28 @@ function CategoriesTab({ draft, update }: { draft: AppSettings; update: (p: Part
   return (
     <div className="modal-body" style={{ gap: 16 }}>
       <div>
-        <div className="field-label" style={{ marginBottom: 8 }}>Tags intégrés</div>
+        <div className="field-label" style={{ marginBottom: 8 }}>{t("settings.tags_tab.builtin_tags")}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {BUILTIN_CATEGORIES.map(cat => (
             <TagRow key={cat} name={cat} color={tagColors[cat] ?? ""} onColorChange={c => setColor(cat, c)} />
           ))}
         </div>
-        <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 6 }}>Ces tags sont toujours disponibles. Cliquez sur la pastille de couleur pour la personnaliser.</div>
+        <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 6 }}>{t("settings.tags_tab.builtin_hint")}</div>
       </div>
 
       <div className="divider" />
 
       <div>
-        <div className="field-label" style={{ marginBottom: 8 }}>Mes tags personnalisés</div>
+        <div className="field-label" style={{ marginBottom: 8 }}>{t("settings.tags_tab.my_custom_tags")}</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-          <input className="input" placeholder="Nouveau tag…" value={newCat}
+          <input className="input" placeholder={t("settings.tags_tab.new_tag_placeholder")} value={newCat}
             onChange={e => setNewCat(e.target.value)} onKeyDown={e => e.key === "Enter" && addCat()} />
           <button className="btn btn-primary btn-sm" onClick={addCat} disabled={!newCat.trim()}>
-            <PlusIcon size={13} /> Ajouter
+            <PlusIcon size={13} /> {t("settings.tags_tab.add")}
           </button>
         </div>
         {allCustom.length === 0 ? (
-          <div style={{ fontSize: 12, color: "var(--text-3)", fontStyle: "italic" }}>Aucun tag personnalisé.</div>
+          <div style={{ fontSize: 12, color: "var(--text-3)", fontStyle: "italic" }}>{t("settings.tags_tab.no_custom")}</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {allCustom.map(cat => (
@@ -982,6 +990,7 @@ function CoffreTab({ draft, update, dbPath }: {
   update: (p: Partial<AppSettings>) => void;
   dbPath?: string;
 }) {
+  const { t } = useTranslation();
   const [backupMsg, setBackupMsg] = useState("");
   const [backupError, setBackupError] = useState("");
   const [backing, setBacking] = useState(false);
@@ -995,7 +1004,7 @@ function CoffreTab({ draft, update, dbPath }: {
 
   const browsePath = async () => {
     try {
-      const selected = await openDialog({ directory: true, multiple: false, title: "Choisir le dossier de sauvegarde" });
+      const selected = await openDialog({ directory: true, multiple: false, title: t("settings.vault_tab.browse_folder_title") });
       if (selected && typeof selected === "string") {
         update({ backupPath: selected });
       }
@@ -1003,8 +1012,8 @@ function CoffreTab({ draft, update, dbPath }: {
   };
 
   const runBackupNow = async () => {
-    if (!dbPath) { setBackupError("Base non disponible."); return; }
-    if (!draft.backupPath) { setBackupError("Veuillez d'abord définir un chemin de sauvegarde."); return; }
+    if (!dbPath) { setBackupError(t("settings.vault_tab.no_db_error")); return; }
+    if (!draft.backupPath) { setBackupError(t("settings.vault_tab.no_backup_path_error")); return; }
     setBacking(true); setBackupError(""); setBackupMsg("");
     try {
       await invoke("backup_database", {
@@ -1013,7 +1022,7 @@ function CoffreTab({ draft, update, dbPath }: {
         namePattern: draft.backupNamePattern || "{date}_{time}_{name}",
       });
       if (dbPath) localStorage.setItem(`vaultix_last_backup_${dbPath}`, String(Date.now()));
-      setBackupMsg("Sauvegarde effectuée avec succès !");
+      setBackupMsg(t("settings.vault_tab.backup_success_now"));
       setTimeout(() => setBackupMsg(""), 4000);
     } catch (e) {
       setBackupError(String(e));
@@ -1023,21 +1032,21 @@ function CoffreTab({ draft, update, dbPath }: {
   };
 
   const INTERVALS = [
-    { label: "30 min", value: 0.5 },
-    { label: "1 heure", value: 1 },
-    { label: "6 heures", value: 6 },
-    { label: "Quotidien", value: 24 },
-    { label: "Hebdomadaire", value: 168 },
+    { label: t("settings.vault_tab.interval_30m"),   value: 0.5 },
+    { label: t("settings.vault_tab.interval_1h"),    value: 1   },
+    { label: t("settings.vault_tab.interval_6h"),    value: 6   },
+    { label: t("settings.vault_tab.interval_daily"), value: 24  },
+    { label: t("settings.vault_tab.interval_weekly"),value: 168 },
   ];
   const isCustomInterval = !INTERVALS.some(iv => iv.value === draft.backupIntervalHours);
 
   return (
     <div className="modal-body" style={{ gap: 18 }}>
       {/* Enable toggle */}
-      <SettingRow icon={<HardDriveIcon size={15} />} label="Sauvegarde automatique" description="Copie la base chiffrée vers un dossier de votre choix">
+      <SettingRow icon={<HardDriveIcon size={15} />} label={t("settings.vault_tab.backup")} description={t("settings.vault_tab.backup_desc_full")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ backupEnabled: true })} className={draft.backupEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activée</button>
-          <button onClick={() => update({ backupEnabled: false })} className={!draft.backupEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivée</button>
+          <button onClick={() => update({ backupEnabled: true })} className={draft.backupEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled_f")}</button>
+          <button onClick={() => update({ backupEnabled: false })} className={!draft.backupEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled_f")}</button>
         </div>
       </SettingRow>
 
@@ -1047,27 +1056,27 @@ function CoffreTab({ draft, update, dbPath }: {
       <div style={{ opacity: draft.backupEnabled ? 1 : 0.45, pointerEvents: draft.backupEnabled ? undefined : "none", transition: "opacity 0.2s", display: "flex", flexDirection: "column", gap: 18 }}>
 
       {/* Backup path */}
-      <SettingRow icon={<FolderIcon size={15} />} label="Chemin de sauvegarde" description="Dossier local, réseau (\\serveur\partage), OneDrive, Dropbox, etc.">
+      <SettingRow icon={<FolderIcon size={15} />} label={t("settings.vault_tab.backup_path")} description={t("settings.vault_tab.backup_path_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             className="input" style={{ flex: 1, fontSize: 12 }}
             value={draft.backupPath}
             onChange={e => update({ backupPath: e.target.value })}
-            placeholder="C:\Sauvegardes  ou  \\serveur\partage"
+            placeholder={t("settings.vault_tab.backup_path_placeholder")}
           />
-          <button className="btn btn-ghost btn-sm" onClick={browsePath} title="Parcourir">
-            <FolderIcon size={13} /> Parcourir
+          <button className="btn btn-ghost btn-sm" onClick={browsePath} title={t("settings.vault_tab.browse")}>
+            <FolderIcon size={13} /> {t("settings.vault_tab.browse")}
           </button>
         </div>
         <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>
-          Fonctionne avec tout chemin accessible : local, réseau UNC, lecteur cloud monté (OneDrive, Dropbox, ProtonDrive…).
+          {t("settings.vault_tab.backup_path_network_hint")}
         </div>
       </SettingRow>
 
       <div className="divider" />
 
       {/* Interval */}
-      <SettingRow icon={<ClockIcon size={15} />} label="Fréquence" description="Intervalle entre deux sauvegardes automatiques">
+      <SettingRow icon={<ClockIcon size={15} />} label={t("settings.vault_tab.backup_interval")} description={t("settings.vault_tab.backup_interval_desc")}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
           {INTERVALS.map(iv => (
             <button key={iv.value} onClick={() => { update({ backupIntervalHours: iv.value }); setCustomMinutes(""); }}
@@ -1087,14 +1096,14 @@ function CoffreTab({ draft, update, dbPath }: {
                 setCustomMinutes(v);
                 if (v && Number(v) > 0) update({ backupIntervalHours: Number(v) / 60 });
               }}
-              title="Valeur personnalisée en minutes"
+              title={t("common.minutes_short")}
             />
             <span style={{ fontSize: 11, color: "var(--text-3)" }}>min</span>
           </div>
         </div>
         {isCustomInterval && draft.backupIntervalHours > 0 && (
           <div style={{ fontSize: 11, color: "var(--accent)" }}>
-            Intervalle personnalisé : {Math.round(draft.backupIntervalHours * 60)} min
+            {t("settings.vault_tab.interval_custom", { minutes: Math.round(draft.backupIntervalHours * 60) })}
           </div>
         )}
       </SettingRow>
@@ -1102,7 +1111,7 @@ function CoffreTab({ draft, update, dbPath }: {
       <div className="divider" />
 
       {/* Max count */}
-      <SettingRow icon={<ArchiveIcon size={15} />} label="Nombre maximum de sauvegardes" description="Les sauvegardes les plus anciennes sont supprimées automatiquement (0 = illimité)">
+      <SettingRow icon={<ArchiveIcon size={15} />} label={t("settings.vault_tab.backup_max")} description={t("settings.vault_tab.backup_max_desc")}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <input type="range" className="range-input" min={0} max={50} step={1}
             value={draft.backupMaxCount}
@@ -1112,14 +1121,14 @@ function CoffreTab({ draft, update, dbPath }: {
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-3)", marginTop: 2 }}>
-          <span>0 (illimité)</span><span>50</span>
+          <span>{t("settings.vault_tab.unlimited")}</span><span>50</span>
         </div>
       </SettingRow>
 
       <div className="divider" />
 
       {/* Filename pattern */}
-      <SettingRow icon={<ToolIcon size={15} />} label="Nom des fichiers de sauvegarde" description="Variables disponibles : {name} (coffre), {date} (AAAAMMJJ), {time} (HHMMSS)">
+      <SettingRow icon={<ToolIcon size={15} />} label={t("settings.vault_tab.backup_pattern")} description={t("settings.vault_tab.backup_pattern_desc")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <div style={{ display: "flex", gap: 8 }}>
             <input
@@ -1129,13 +1138,13 @@ function CoffreTab({ draft, update, dbPath }: {
               placeholder="{date}_{time}_{name}"
               spellCheck={false}
             />
-            <button className="btn btn-ghost btn-sm" onClick={() => update({ backupNamePattern: "{date}_{time}_{name}" })} title="Réinitialiser">
+            <button className="btn btn-ghost btn-sm" onClick={() => update({ backupNamePattern: "{date}_{time}_{name}" })} title={t("common.reset")}>
               ↺
             </button>
           </div>
           {/* Live preview */}
           <div style={{ fontSize: 11, color: "var(--text-2)", fontFamily: "monospace" }}>
-            Aperçu : <span style={{ color: "var(--accent)" }}>
+            {t("settings.vault_tab.backup_preview")} <span style={{ color: "var(--accent)" }}>
               {(draft.backupNamePattern || "{date}_{time}_{name}")
                 .replace("{name}", "MonCoffre")
                 .replace("{date}", new Date().toISOString().slice(0,10).replace(/-/g,""))
@@ -1151,14 +1160,14 @@ function CoffreTab({ draft, update, dbPath }: {
       {/* Manual backup */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button className="btn btn-ghost" onClick={runBackupNow} disabled={backing || !draft.backupPath}>
-          {backing ? <><span className="spinner" style={{ width: 12, height: 12 }} /> En cours…</> : <><HardDriveIcon size={13} /> Sauvegarder maintenant</>}
+          {backing ? <><span className="spinner" style={{ width: 12, height: 12 }} /> {t("settings.vault_tab.running")}</> : <><HardDriveIcon size={13} /> {t("settings.vault_tab.run_now")}</>}
         </button>
         {backupMsg && <span style={{ fontSize: 12, color: "var(--success)" }}>{backupMsg}</span>}
         {backupError && <span style={{ fontSize: 12, color: "var(--danger)" }}>⚠ {backupError}</span>}
       </div>
 
       <div className="info-msg" style={{ fontSize: 11 }}>
-        <b>Pattern :</b> Combinez librement <code>{'{name}'}</code>, <code>{'{date}'}</code> et <code>{'{time}'}</code>. Exemple : <code>{'{name}_{date}'}</code> → <code>MonCoffre_20260322.kv</code>
+        {t("settings.vault_tab.pattern_info")}
       </div>
 
       </div>{/* end backup sub-options */}
@@ -1166,22 +1175,22 @@ function CoffreTab({ draft, update, dbPath }: {
       <div className="divider" />
 
       {/* Compression */}
-      <SettingRow icon={<ZipIcon size={15} />} label="Compression des données" description="Compresse le contenu avant chiffrement (réduit la taille, aucun impact sur la sécurité)">
+      <SettingRow icon={<ZipIcon size={15} />} label={t("settings.vault_tab.compression")} description={t("settings.vault_tab.compression_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ compression: true })} className={draft.compression ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activée (recommandé)</button>
-          <button onClick={() => update({ compression: false })} className={!draft.compression ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivée</button>
+          <button onClick={() => update({ compression: true })} className={draft.compression ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("settings.vault_tab.compression_enabled")}</button>
+          <button onClick={() => update({ compression: false })} className={!draft.compression ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled_f")}</button>
         </div>
       </SettingRow>
 
       <div className="divider" />
 
       {/* Recent vaults count */}
-      <SettingRow icon={<HistoryIcon size={15} />} label="Coffres récents" description="Nombre de coffres récemment ouverts affichés sur l'écran d'accueil">
+      <SettingRow icon={<HistoryIcon size={15} />} label={t("settings.vault_tab.recent_vaults")} description={t("settings.vault_tab.recent_vaults_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
           {[3, 5, 10].map(v => (
             <button key={v} onClick={() => update({ recentDbsCount: v })}
               className={draft.recentDbsCount === v ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>
-              {v} derniers
+              {t("settings.vault_tab.recent_last", { count: v })}
             </button>
           ))}
         </div>
@@ -1191,10 +1200,11 @@ function CoffreTab({ draft, update, dbPath }: {
 }
 
 function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p: Partial<AppSettings>) => void; onReset: () => void }) {
+  const { t, i18n } = useTranslation();
 
   const handlePickLogPath = async () => {
     const path = await saveDialog({
-      filters: [{ name: "Fichier log", extensions: ["log", "txt"] }],
+      filters: [{ name: t("settings.system.debug_log_file"), extensions: ["log", "txt"] }],
       defaultPath: "vaultix.log",
     });
     if (path) update({ logPath: path });
@@ -1240,7 +1250,7 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
       const result = await invoke<{ version: string; notes?: string } | null>("check_update");
       setUpdateResult(result ?? "up_to_date");
     } catch (e) {
-      setUpdateResult(`Erreur : ${String(e)}`);
+      setUpdateResult(`${t("common.error")}: ${String(e)}`);
     } finally {
       setCheckingUpdate(false);
     }
@@ -1249,15 +1259,31 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
   return (
     <div className="modal-body" style={{ gap: 18 }}>
 
+      {/* Language */}
+      <SettingRow icon={<GlobeIcon size={15} />} label={t("settings.system.language")} description={t("settings.system.language_desc")}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {(["fr", "en", "es", "de"] as const).map(code => (
+            <button
+              key={code}
+              onClick={() => i18n.changeLanguage(code)}
+              className={i18n.language.startsWith(code) ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}
+            >
+              {t(`languages.${code}`)}
+            </button>
+          ))}
+        </div>
+      </SettingRow>
+      <div className="divider" />
+
       {/* System tray */}
-      <SettingRow icon={<TrayIconSvg size={15} />} label="Icône dans la barre système" description="Affiche une icône dans le systray — fermer la fenêtre la minimise au lieu de quitter">
+      <SettingRow icon={<TrayIconSvg size={15} />} label={t("settings.system.tray")} description={t("settings.system.tray_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ systemTrayEnabled: true })} className={draft.systemTrayEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activée</button>
-          <button onClick={() => update({ systemTrayEnabled: false })} className={!draft.systemTrayEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivée</button>
+          <button onClick={() => update({ systemTrayEnabled: true })} className={draft.systemTrayEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled_f")}</button>
+          <button onClick={() => update({ systemTrayEnabled: false })} className={!draft.systemTrayEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled_f")}</button>
         </div>
         {draft.systemTrayEnabled && (
           <div style={{ fontSize: 11, color: "var(--text-2)" }}>
-            Clic sur l'icône : restaurer la fenêtre. Menu clic droit : Ouvrir, Verrouiller, Quitter.
+            {t("settings.system.tray_enabled_desc")}
           </div>
         )}
       </SettingRow>
@@ -1265,43 +1291,43 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
       <div className="divider" />
 
       {/* Debug / logs */}
-      <SettingRow icon={<BugIcon size={15} />} label="Mode debug" description="Enregistre les événements internes (tray, fenêtre, BDD, sauvegardes…) dans un fichier journal">
+      <SettingRow icon={<BugIcon size={15} />} label={t("settings.system.debug")} description={t("settings.system.debug_desc")}>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => handleToggleDebug(true)}  className={draft.debugMode  ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activé</button>
-          <button onClick={() => handleToggleDebug(false)} className={!draft.debugMode ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivé</button>
+          <button onClick={() => handleToggleDebug(true)}  className={draft.debugMode  ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled")}</button>
+          <button onClick={() => handleToggleDebug(false)} className={!draft.debugMode ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled")}</button>
         </div>
       </SettingRow>
 
       {draft.debugMode && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", background: "var(--bg-hover)", borderRadius: 10, border: "1px solid var(--border-light)" }}>
-          <div className="field-label" style={{ marginBottom: 0 }}>Fichier de log</div>
+          <div className="field-label" style={{ marginBottom: 0 }}>{t("settings.system.debug_log_file")}</div>
           <div style={{ display: "flex", gap: 6 }}>
             <input
               type="text"
               value={draft.logPath}
               onChange={e => update({ logPath: e.target.value })}
-              placeholder="Aucun chemin défini…"
+              placeholder={t("settings.system.debug_no_path")}
               style={{ flex: 1, fontSize: 11, fontFamily: "monospace", background: "var(--bg-hover)", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 10px", color: "var(--text-1)", outline: "none" }}
             />
-            <button className="btn btn-ghost btn-sm" onClick={handlePickLogPath} title="Choisir un emplacement">
-              <FolderIcon size={12} /> Parcourir…
+            <button className="btn btn-ghost btn-sm" onClick={handlePickLogPath} title={t("settings.system.debug_choose_location")}>
+              <FolderIcon size={12} /> {t("settings.system.debug_browse")}
             </button>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <button className="btn btn-ghost btn-sm" onClick={handleDefaultLogPath} title="Remettre le chemin par défaut (%AppData%\vaultix\logs\vaultix.log)">
-              <RefreshIcon size={12} /> Réinitialiser
+            <button className="btn btn-ghost btn-sm" onClick={handleDefaultLogPath} title={t("settings.system.debug_reset_path")}>
+              <RefreshIcon size={12} /> {t("settings.system.debug_reset_path")}
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={handleOpenLog} disabled={!draft.logPath} title="Ouvrir dans l'éditeur système">
-              <EyeIcon size={12} /> Ouvrir les logs
+            <button className="btn btn-ghost btn-sm" onClick={handleOpenLog} disabled={!draft.logPath} title={t("settings.system.debug_open_logs")}>
+              <EyeIcon size={12} /> {t("settings.system.debug_open_logs")}
             </button>
             <button className="btn btn-ghost btn-sm" onClick={handleClearLog} disabled={!draft.logPath}
               style={{ color: draft.logPath ? "var(--danger)" : undefined }}>
-              <TrashIcon size={12} /> Effacer les logs
+              <TrashIcon size={12} /> {t("settings.system.debug_clear_logs")}
             </button>
           </div>
           {!draft.logPath && (
             <div style={{ fontSize: 11, color: "var(--warning)", display: "flex", alignItems: "center", gap: 5 }}>
-              ⚠ Définissez un chemin de fichier pour activer la journalisation, puis cliquez sur <b>Enregistrer</b>.
+              ⚠ {t("settings.system.debug_no_path_warning")}
             </div>
           )}
           {draft.logPath && (
@@ -1317,12 +1343,12 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
       {/* Mises à jour */}
       <SettingRow
         icon={<RefreshIcon size={15} />}
-        label="Mises à jour automatiques"
-        description="Vérifie les nouvelles versions au démarrage et affiche une notification si une mise à jour est disponible"
+        label={t("settings.system.updates")}
+        description={t("settings.system.updates_desc")}
       >
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ autoUpdateEnabled: true })}  className={draft.autoUpdateEnabled  ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Activées</button>
-          <button onClick={() => update({ autoUpdateEnabled: false })} className={!draft.autoUpdateEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>Désactivées</button>
+          <button onClick={() => update({ autoUpdateEnabled: true })}  className={draft.autoUpdateEnabled  ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled_f")}</button>
+          <button onClick={() => update({ autoUpdateEnabled: false })} className={!draft.autoUpdateEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled_f")}</button>
         </div>
       </SettingRow>
 
@@ -1333,14 +1359,14 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
           disabled={checkingUpdate}
         >
           <RefreshIcon size={12} />
-          {checkingUpdate ? "Vérification…" : "Vérifier maintenant"}
+          {checkingUpdate ? t("settings.system.checking") : t("settings.system.check_now")}
         </button>
         {updateResult === "up_to_date" && (
-          <span style={{ fontSize: 11, color: "var(--text-2)" }}>✓ Vous êtes à jour.</span>
+          <span style={{ fontSize: 11, color: "var(--text-2)" }}>{t("settings.system.no_update")}</span>
         )}
         {updateResult && typeof updateResult === "object" && (
           <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 500 }}>
-            🔄 Nouvelle version disponible : v{updateResult.version}
+            {t("settings.system.update_available_v", { version: updateResult.version })}
           </span>
         )}
         {updateResult && typeof updateResult === "string" && updateResult !== "up_to_date" && (
@@ -1353,10 +1379,10 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
       {/* Réinitialisation */}
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-1)", display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <RefreshIcon size={15} /> Réinitialiser les paramètres
+          <RefreshIcon size={15} /> {t("settings.system.reset_settings")}
         </div>
         <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 10 }}>
-          Remet tous les paramètres aux valeurs par défaut. Les méthodes d'authentification (biométrie, TOTP) ne sont pas affectées.
+          {t("settings.system.reset_settings_desc")}
         </div>
         {!confirmReset ? (
           <button
@@ -1364,7 +1390,7 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
             style={{ color: "var(--danger)", borderColor: "rgba(239,68,68,0.35)" }}
             onClick={() => setConfirmReset(true)}
           >
-            <RefreshIcon size={13} /> Réinitialiser…
+            <RefreshIcon size={13} /> {t("settings.system.reset_btn")}
           </button>
         ) : (
           <div style={{
@@ -1373,14 +1399,14 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
             background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.3)",
           }}>
             <span style={{ fontSize: 12, color: "var(--danger)", flex: 1 }}>
-              Tous les paramètres seront remis à zéro. Continuer ?
+              {t("settings.system.reset_confirm_text")}
             </span>
-            <button className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(false)}>Annuler</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(false)}>{t("common.cancel")}</button>
             <button
               className="btn btn-danger btn-sm"
               onClick={() => { onReset(); setConfirmReset(false); }}
             >
-              Confirmer
+              {t("common.confirm")}
             </button>
           </div>
         )}
@@ -1396,6 +1422,7 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
 }
 
 function ShortcutsSection({ draft, update }: { draft: AppSettings; update: (p: Partial<AppSettings>) => void }) {
+  const { t } = useTranslation();
   const SHORTCUT_ORDER: ShortcutAction[] = [
     "navigate_up", "navigate_down",
     "focus_search", "new_entry", "edit_entry", "delete_entry",
@@ -1404,7 +1431,7 @@ function ShortcutsSection({ draft, update }: { draft: AppSettings; update: (p: P
   ];
   const sc: ShortcutMap = { ...DEFAULT_SHORTCUTS, ...(draft.shortcuts ?? {}) };
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
-  const [conflict, setConflict] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<ShortcutAction | null>(null);
 
   useEffect(() => {
     if (!recording) return;
@@ -1415,7 +1442,7 @@ function ShortcutsSection({ draft, update }: { draft: AppSettings; update: (p: P
       if (!key) return;
       const conflictAction = (Object.entries(sc) as [ShortcutAction, string][])
         .find(([a, k]) => k === key && a !== recording);
-      if (conflictAction) { setConflict(`Conflit avec "${SHORTCUT_LABELS[conflictAction[0]]}"`); return; }
+      if (conflictAction) { setConflict(conflictAction[0]); return; }
       setConflict(null);
       update({ shortcuts: { ...sc, [recording]: key } });
       setRecording(null);
@@ -1429,20 +1456,20 @@ function ShortcutsSection({ draft, update }: { draft: AppSettings; update: (p: P
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-1)", display: "flex", alignItems: "center", gap: 8 }}>
-            <KeyboardIcon size={15} /> Raccourcis clavier
+            <KeyboardIcon size={15} /> {t("settings.system.shortcuts_title")}
           </div>
           <div style={{ fontSize: 12, color: "var(--text-2)", marginTop: 2 }}>
-            Cliquez sur un raccourci pour le modifier. <kbd style={kbdStyle}>Echap</kbd> pour annuler.
+            {t("settings.system.shortcuts_hint")} <kbd style={kbdStyle}>Echap</kbd>
           </div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => update({ shortcuts: { ...DEFAULT_SHORTCUTS } })}>Réinitialiser</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => update({ shortcuts: { ...DEFAULT_SHORTCUTS } })}>{t("common.reset")}</button>
       </div>
 
       {recording && conflict && (
         <div style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#ef4444", marginBottom: 6 }}>
-          ⚠ {conflict} — choisissez une autre combinaison ou <button
+          ⚠ {t("settings.system.shortcuts_conflict", { label: t(`shortcuts.${conflict}`) })} — <button
             style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", textDecoration: "underline", padding: 0, fontSize: 12 }}
-            onClick={() => setConflict(null)}>ignorer</button>
+            onClick={() => setConflict(null)}>{t("settings.system.shortcuts_ignore")}</button>
         </div>
       )}
 
@@ -1458,7 +1485,7 @@ function ShortcutsSection({ draft, update }: { draft: AppSettings; update: (p: P
               border: `1px solid ${isRecording ? "var(--accent)" : "transparent"}`,
               transition: "background 0.12s",
             }}>
-              <span style={{ fontSize: 13, color: "var(--text-1)" }}>{SHORTCUT_LABELS[action]}</span>
+              <span style={{ fontSize: 13, color: "var(--text-1)" }}>{t(`shortcuts.${action}`)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
                   onClick={() => { setConflict(null); setRecording(isRecording ? null : action); }}
@@ -1471,12 +1498,12 @@ function ShortcutsSection({ draft, update }: { draft: AppSettings; update: (p: P
                     transition: "all 0.12s",
                   }}
                 >
-                  {isRecording ? "Appuyez sur une touche…" : formatShortcutDisplay(current)}
+                  {isRecording ? t("settings.system.shortcuts_press") : formatShortcutDisplay(current)}
                 </button>
                 <button
                   onClick={() => update({ shortcuts: { ...sc, [action]: DEFAULT_SHORTCUTS[action] } })}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, lineHeight: 1 }}
-                  title="Réinitialiser ce raccourci"
+                  title={t("settings.system.shortcuts_reset_tooltip")}
                 >↺</button>
               </div>
             </div>
@@ -1542,3 +1569,4 @@ function HistoryIcon({ size = 14 }: { size?: number }) { return <svg width={size
 function TrayIconSvg({ size = 14 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M12 14V3"/><polyline points="8 7 12 3 16 7"/><circle cx="18" cy="18" r="1" fill="currentColor" stroke="none"/></svg>; }
 function BugIcon({ size = 14 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2l1.88 1.88"/><path d="M14.12 3.88L16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6z"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>; }
 function RefreshIcon({ size = 14 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>; }
+function GlobeIcon({ size = 14 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>; }

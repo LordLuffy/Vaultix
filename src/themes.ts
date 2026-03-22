@@ -6,17 +6,17 @@ export interface ThemePreset {
   vars: Record<string, string>;
 }
 
-export const EDITABLE_VARS: Array<{ key: string; label: string }> = [
-  { key: "--bg-primary",   label: "Fond principal" },
-  { key: "--bg-card",      label: "Fond carte / barre latérale" },
-  { key: "--bg-hover",     label: "Survol" },
-  { key: "--accent",       label: "Couleur d'accentuation" },
-  { key: "--text-1",       label: "Texte principal" },
-  { key: "--text-2",       label: "Texte secondaire" },
-  { key: "--text-3",       label: "Texte discret" },
-  { key: "--success",      label: "Succès" },
-  { key: "--warning",      label: "Avertissement" },
-  { key: "--danger",       label: "Danger" },
+export const EDITABLE_VARS: Array<{ key: string }> = [
+  { key: "--bg-primary" },
+  { key: "--bg-card" },
+  { key: "--bg-hover" },
+  { key: "--accent" },
+  { key: "--text-1" },
+  { key: "--text-2" },
+  { key: "--text-3" },
+  { key: "--success" },
+  { key: "--warning" },
+  { key: "--danger" },
 ];
 
 export const THEME_PRESETS: ThemePreset[] = [

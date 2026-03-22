@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 interface Props {
   onClose: () => void;
@@ -14,16 +16,17 @@ interface GeneratorResult {
   entropy_bits: number;
 }
 
-function entropyLabel(bits: number): { label: string; color: string } {
-  if (bits < 28) return { label: "Catastrophique", color: "#ef4444" };
-  if (bits < 36) return { label: "Très faible",    color: "#ef4444" };
-  if (bits < 50) return { label: "Faible",          color: "#f97316" };
-  if (bits < 64) return { label: "Moyen",           color: "#f59e0b" };
-  if (bits < 80) return { label: "Fort",            color: "#22c55e" };
-  return                { label: "Très fort",       color: "#10b981" };
+function entropyLabel(bits: number, t: TFunction): { label: string; color: string } {
+  if (bits < 28) return { label: t("generator.entropy.catastrophic"), color: "#ef4444" };
+  if (bits < 36) return { label: t("generator.entropy.very_weak"),    color: "#ef4444" };
+  if (bits < 50) return { label: t("generator.entropy.weak"),         color: "#f97316" };
+  if (bits < 64) return { label: t("generator.entropy.medium"),       color: "#f59e0b" };
+  if (bits < 80) return { label: t("generator.entropy.strong"),       color: "#22c55e" };
+  return                { label: t("generator.entropy.very_strong"),  color: "#10b981" };
 }
 
 export default function GeneratorModal({ onClose, onUse }: Props) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>("charset");
   const [result, setResult] = useState<GeneratorResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -67,7 +70,7 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
       const r = await invoke<GeneratorResult>("generate_password", { options: buildOptions() });
       setResult(r);
     } catch (e) {
-      setResult({ password: `Erreur: ${e}`, entropy_bits: 0 });
+      setResult({ password: `${t("common.error")}: ${e}`, entropy_bits: 0 });
     } finally {
       setGenerating(false);
     }
@@ -84,7 +87,7 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
 
   const pw = result?.password ?? "";
   const bits = result?.entropy_bits ?? 0;
-  const { label: entLabel, color: entColor } = entropyLabel(bits);
+  const { label: entLabel, color: entColor } = entropyLabel(bits, t);
 
   return (
     <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -94,14 +97,14 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
                         display: "flex", alignItems: "center", justifyContent: "center" }}>
             <KeyIcon size={16} />
           </div>
-          <h2>Générateur de mot de passe</h2>
+          <h2>{t("generator.title")}</h2>
           <button className="btn-icon" onClick={onClose}><XIcon /></button>
         </div>
 
         <div className="modal-body" style={{ flex: 1, overflowY: "auto" }}>
           {/* Mode tabs */}
           <div style={{ display: "flex", gap: 2, marginBottom: 12, background: "var(--bg-primary)", borderRadius: 8, padding: 3 }}>
-            {([["charset","Jeu de chars"],["passphrase","Phrase secrète"],["pattern","Motif"]] as [Mode,string][]).map(([m, label]) => (
+            {([[("charset" as Mode), t("generator.mode_charset")],[("passphrase" as Mode), t("generator.mode_passphrase")],[("pattern" as Mode), t("generator.mode_pattern")]] as [Mode,string][]).map(([m, label]) => (
               <button key={m} onClick={() => setMode(m)} style={{
                 flex: 1, padding: "5px 0", borderRadius: 6, border: "none", cursor: "pointer",
                 fontSize: 12, fontWeight: 500,
@@ -115,11 +118,11 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
           {/* Output */}
           <div className="generator-output">
             <span style={{ flex: 1, overflowWrap: "anywhere", fontFamily: mode === "charset" ? "monospace" : "inherit" }}>
-              {generating ? "Génération…" : pw}
+              {generating ? t("generator.generating") : pw}
             </span>
             <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-              <button className="btn-icon" onClick={generate} title="Régénérer"><RefreshIcon size={15} /></button>
-              <button className="btn-icon" onClick={handleCopy} title="Copier" style={{ color: copied ? "var(--success)" : undefined }}>
+              <button className="btn-icon" onClick={generate} title={t("generator.regenerate")}><RefreshIcon size={15} /></button>
+              <button className="btn-icon" onClick={handleCopy} title={t("common.copy")} style={{ color: copied ? "var(--success)" : undefined }}>
                 {copied ? <CheckIcon size={15} /> : <CopyIcon size={15} />}
               </button>
             </div>
@@ -140,7 +143,7 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
             </span>
           </div>
           <div style={{ fontSize: 10, color: "var(--text-3)", marginBottom: 10 }}>
-            {bits >= 80 ? "✓ Recommandé pour tout usage" : bits >= 64 ? "✓ Acceptable pour la plupart des comptes" : bits >= 50 ? "⚠ Minimum recommandé" : "✗ Trop faible"}
+            {bits >= 80 ? `✓ ${t("generator.entropy.recommended")}` : bits >= 64 ? `✓ ${t("generator.entropy.acceptable")}` : bits >= 50 ? `⚠ ${t("generator.entropy.minimum")}` : `✗ ${t("generator.entropy.too_weak")}`}
           </div>
 
           {/* ── Charset mode ── */}
@@ -148,7 +151,7 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
             <>
               <div className="field-group">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <label className="field-label">Longueur</label>
+                  <label className="field-label">{t("generator.length")}</label>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)", fontFamily: "monospace" }}>{length}</span>
                 </div>
                 <input type="range" className="range-input" min={4} max={128} value={length} onChange={e => setLength(Number(e.target.value))} />
@@ -157,13 +160,13 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
                 </div>
               </div>
               <div>
-                <div className="field-label" style={{ marginBottom: 6 }}>Types de caractères</div>
+                <div className="field-label" style={{ marginBottom: 6 }}>{t("generator.char_types")}</div>
                 {[
-                  { label: "Majuscules (A–Z)", value: uppercase, set: setUppercase },
-                  { label: "Minuscules (a–z)", value: lowercase, set: setLowercase },
-                  { label: "Chiffres (0–9)", value: digits, set: setDigits },
-                  { label: "Symboles (!@#$…)", value: symbols, set: setSymbols },
-                  { label: "Exclure ambigus (0O1Ii|)", value: excludeAmbiguous, set: setExcludeAmbiguous },
+                  { label: t("generator.uppercase"), value: uppercase, set: setUppercase },
+                  { label: t("generator.lowercase"), value: lowercase, set: setLowercase },
+                  { label: t("generator.digits"), value: digits, set: setDigits },
+                  { label: t("generator.symbols"), value: symbols, set: setSymbols },
+                  { label: t("generator.exclude_ambiguous"), value: excludeAmbiguous, set: setExcludeAmbiguous },
                 ].map(opt => (
                   <div key={opt.label} className="toggle-row">
                     <span style={{ fontSize: 13, color: "var(--text-2)" }}>{opt.label}</span>
@@ -175,8 +178,8 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
                 ))}
               </div>
               <div className="field-group" style={{ marginTop: 8 }}>
-                <label className="field-label">Caractères personnalisés supplémentaires</label>
-                <input className="input input-mono" value={extraChars} onChange={e => setExtraChars(e.target.value)} placeholder="ex: éàü€£" style={{ fontSize: 13 }} />
+                <label className="field-label">{t("generator.extra_chars")}</label>
+                <input className="input input-mono" value={extraChars} onChange={e => setExtraChars(e.target.value)} placeholder={t("generator.extra_chars_placeholder")} style={{ fontSize: 13 }} />
               </div>
             </>
           )}
@@ -186,7 +189,7 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
             <>
               <div className="field-group">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <label className="field-label">Nombre de mots</label>
+                  <label className="field-label">{t("generator.word_count")}</label>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)", fontFamily: "monospace" }}>{wordCount}</span>
                 </div>
                 <input type="range" className="range-input" min={2} max={12} value={wordCount} onChange={e => setWordCount(Number(e.target.value))} />
@@ -195,24 +198,24 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
                 </div>
               </div>
               <div className="field-group">
-                <label className="field-label">Séparateur</label>
+                <label className="field-label">{t("generator.separator")}</label>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {[["-","tiret"],["_","souligné"],[".","."],["","aucun"],[" ","espace"]].map(([v, label]) => (
+                  {[["-", t("generator.sep_hyphen")],["_", t("generator.sep_underscore")],[".", "."],["", t("generator.sep_none")],[" ", t("generator.sep_space")]].map(([v, label]) => (
                     <button key={v} onClick={() => setSeparator(v)}
                       className={`btn btn-sm ${separator === v ? "btn-primary" : "btn-ghost"}`}
                       style={{ fontSize: 12, padding: "3px 10px" }}>
-                      {v === "" ? "Aucun" : v === " " ? "Espace" : v}{v !== "" && v !== " " ? "" : ""} <span style={{ color: "var(--text-3)", fontSize: 10 }}>({label})</span>
+                      {v === "" ? t("generator.sep_none") : v === " " ? t("generator.sep_space") : v} <span style={{ color: "var(--text-3)", fontSize: 10 }}>({label})</span>
                     </button>
                   ))}
                   <input className="input" value={!["-","_","."," ",""].includes(separator) ? separator : ""}
-                    onChange={e => setSeparator(e.target.value)} placeholder="Autre…"
+                    onChange={e => setSeparator(e.target.value)} placeholder={t("generator.sep_other")}
                     style={{ width: 70, fontSize: 12, padding: "3px 8px", display: "inline-flex" }} />
                 </div>
               </div>
               {[
-                { label: "Majuscule sur chaque mot", value: capitalize, set: setCapitalize },
-                { label: "Ajouter un nombre (ex: 42)", value: appendNumber, set: setAppendNumber },
-                { label: "Ajouter un symbole (!@#…)", value: appendSymbol, set: setAppendSymbol },
+                { label: t("generator.capitalize"), value: capitalize, set: setCapitalize },
+                { label: t("generator.append_number"), value: appendNumber, set: setAppendNumber },
+                { label: t("generator.append_symbol"), value: appendSymbol, set: setAppendSymbol },
               ].map(opt => (
                 <div key={opt.label} className="toggle-row">
                   <span style={{ fontSize: 13, color: "var(--text-2)" }}>{opt.label}</span>
@@ -229,18 +232,18 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
           {mode === "pattern" && (
             <>
               <div className="field-group">
-                <label className="field-label">Motif</label>
+                <label className="field-label">{t("generator.pattern")}</label>
                 <input className="input input-mono" value={pattern} onChange={e => setPattern(e.target.value)} placeholder="XXxx-dddd-ssxx" />
                 <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 5, lineHeight: 1.7 }}>
-                  <code style={{ color: "var(--accent)" }}>x</code> = minuscule &nbsp;
-                  <code style={{ color: "var(--accent)" }}>X</code> = majuscule &nbsp;
-                  <code style={{ color: "var(--accent)" }}>d</code> = chiffre &nbsp;
-                  <code style={{ color: "var(--accent)" }}>s</code> = symbole &nbsp;
-                  <code style={{ color: "var(--accent)" }}>*</code> = n'importe quel &nbsp;
-                  <code style={{ color: "var(--accent)" }}>\c</code> = littéral c
+                  <code style={{ color: "var(--accent)" }}>x</code> = {t("generator.pattern_legend_x")} &nbsp;
+                  <code style={{ color: "var(--accent)" }}>X</code> = {t("generator.pattern_legend_X")} &nbsp;
+                  <code style={{ color: "var(--accent)" }}>d</code> = {t("generator.pattern_legend_d")} &nbsp;
+                  <code style={{ color: "var(--accent)" }}>s</code> = {t("generator.pattern_legend_s")} &nbsp;
+                  <code style={{ color: "var(--accent)" }}>*</code> = {t("generator.pattern_legend_any")} &nbsp;
+                  <code style={{ color: "var(--accent)" }}>\c</code> = {t("generator.pattern_legend_literal")}
                 </div>
                 <div style={{ marginTop: 8 }}>
-                  <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 4 }}>Exemples rapides :</div>
+                  <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 4 }}>{t("generator.quick_examples")}</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {["XXxx-dddd-ssxx","****-****-****-****","Xxxd-Xxxd","XXXXdddd!"].map(p => (
                       <button key={p} onClick={() => setPattern(p)}
@@ -256,12 +259,12 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
         </div>
 
         <div className="modal-footer" style={{ flexShrink: 0 }}>
-          <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
+          <button className="btn btn-ghost" onClick={onClose}>{t("common.close")}</button>
           <button className="btn btn-primary" onClick={() => { onUse(pw); onClose(); }} disabled={!pw}>
-            <CheckIcon size={14} /> Utiliser
+            <CheckIcon size={14} /> {t("generator.use")}
           </button>
           <button className="btn btn-primary" onClick={handleCopy} disabled={!pw}>
-            {copied ? <><CheckIcon size={14} /> Copié !</> : <><CopyIcon size={14} /> Copier</>}
+            {copied ? <><CheckIcon size={14} /> {t("common.copied")}</> : <><CopyIcon size={14} /> {t("common.copy")}</>}
           </button>
         </div>
       </div>

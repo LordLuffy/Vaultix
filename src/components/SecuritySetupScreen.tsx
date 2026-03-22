@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { QRCodeSVG } from "qrcode.react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   masterPassword: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
+  const { t } = useTranslation();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricDone, setBiometricDone] = useState(false);
   const [totpDone, setTotpDone] = useState(false);
@@ -98,9 +100,9 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
           }}>
             <ShieldIcon size={26} />
           </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-1)" }}>Sécurisez votre base</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-1)" }}>{t("security_setup.title")}</div>
           <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6, lineHeight: 1.6 }}>
-            Configurez une méthode d'authentification rapide pour déverrouiller votre coffre sans ressaisir votre mot de passe maître.
+            {t("security_setup.subtitle")}
           </div>
         </div>
 
@@ -110,16 +112,16 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
           {biometricAvailable && (
             <SetupCard
               icon={<FingerprintIcon size={20} />}
-              title="Biométrie / Windows Hello"
-              description="Empreinte digitale, visage ou code PIN Windows"
+              title={t("security_setup.biometricTitle")}
+              description={t("security_setup.biometricDesc")}
               done={biometricDone}
             >
               {biometricDone ? (
-                <div style={{ fontSize: 12, color: "var(--success)" }}>✓ Biométrie activée avec succès</div>
+                <div style={{ fontSize: 12, color: "var(--success)" }}>✓ {t("security_setup.biometricDone")}</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <button className="btn btn-ghost btn-sm" onClick={handleRegisterBio} disabled={bioLoading} style={{ alignSelf: "flex-start" }}>
-                    {bioLoading ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Activation…</> : "Activer la biométrie"}
+                    {bioLoading ? <><span className="spinner" style={{ width: 12, height: 12 }} /> {t("security_setup.activating")}</> : t("security_setup.activateBiometric")}
                   </button>
                   {bioError && <div className="error-msg" style={{ fontSize: 11 }}><span>⚠</span>{bioError}</div>}
                 </div>
@@ -130,20 +132,20 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
           {/* ── TOTP card ── */}
           <SetupCard
             icon={<PhoneIcon size={20} />}
-            title="Application d'authentification (TOTP)"
-            description="Google Authenticator, Authy, Microsoft Authenticator…"
+            title={t("security_setup.totpTitle")}
+            description={t("security_setup.totpDesc")}
             done={totpDone}
           >
             {totpDone ? (
-              <div style={{ fontSize: 12, color: "var(--success)" }}>✓ Application TOTP liée avec succès</div>
+              <div style={{ fontSize: 12, color: "var(--success)" }}>✓ {t("security_setup.totpDone")}</div>
             ) : !totpExpanded ? (
               <button className="btn btn-ghost btn-sm" onClick={handleExpandTotp} disabled={totpLoading} style={{ alignSelf: "flex-start" }}>
-                {totpLoading ? <><span className="spinner" style={{ width: 12, height: 12 }} /> Génération…</> : "Configurer TOTP"}
+                {totpLoading ? <><span className="spinner" style={{ width: 12, height: 12 }} /> {t("security_setup.generating")}</> : t("security_setup.setupTotp")}
               </button>
             ) : totpStep === "show" && totpUri ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div className="info-msg" style={{ fontSize: 11 }}>
-                  Scannez ce QR code avec votre application (Google Authenticator, Authy…), puis saisissez le code à 6 chiffres affiché.
+                  {t("security_setup.totpScanHint")}
                 </div>
 
                 {/* QR Code */}
@@ -159,7 +161,7 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
                 {/* Fallback: show secret */}
                 <details style={{ fontSize: 11 }}>
                   <summary style={{ cursor: "pointer", color: "var(--text-3)", userSelect: "none" }}>
-                    Impossible de scanner ? Saisissez manuellement le secret
+                    {t("security_setup.cantScan")}
                   </summary>
                   <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
                     <code style={{
@@ -169,7 +171,7 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
                     }}>
                       {totpSecret}
                     </code>
-                    <button className="btn-icon" onClick={() => navigator.clipboard?.writeText(totpSecret)} title="Copier le secret">
+                    <button className="btn-icon" onClick={() => navigator.clipboard?.writeText(totpSecret)} title={t("security_setup.copySecret")}>
                       <CopyIcon size={13} />
                     </button>
                   </div>
@@ -178,7 +180,7 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
                 {/* Verification code */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <label style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 600 }}>
-                    Code de vérification (6 chiffres)
+                    {t("security_setup.verifyCode")}
                   </label>
                   <div style={{ display: "flex", gap: 8 }}>
                     <input
@@ -198,11 +200,11 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
                     >
                       {totpLoading
                         ? <span className="spinner" style={{ width: 12, height: 12 }} />
-                        : "Vérifier & Activer"
+                        : t("security_setup.verifyAndActivate")
                       }
                     </button>
                     <button className="btn btn-ghost btn-sm" onClick={() => { setTotpExpanded(false); setTotpStep("idle"); setTotpCode(""); }}>
-                      Annuler
+                      {t("common.cancel")}
                     </button>
                   </div>
                 </div>
@@ -211,7 +213,7 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
               </div>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-3)", fontSize: 12 }}>
-                <span className="spinner" style={{ width: 14, height: 14 }} /> Génération du QR code…
+                <span className="spinner" style={{ width: 14, height: 14 }} /> {t("security_setup.generatingQr")}
               </div>
             )}
           </SetupCard>
@@ -219,10 +221,10 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
           {/* Footer */}
           <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             {anyDone ? (
-              <div style={{ fontSize: 12, color: "var(--success)" }}>✓ Méthode configurée — votre coffre est bien sécurisé.</div>
+              <div style={{ fontSize: 12, color: "var(--success)" }}>✓ {t("security_setup.methodConfigured")}</div>
             ) : (
               <div style={{ fontSize: 11, color: "var(--text-3)" }}>
-                Configurable à tout moment dans Paramètres → Auth.
+                {t("security_setup.configureLater")}
               </div>
             )}
             <button
@@ -230,7 +232,7 @@ export default function SecuritySetupScreen({ masterPassword, onDone }: Props) {
               onClick={onDone}
               style={{ flexShrink: 0 }}
             >
-              {anyDone ? "Accéder au coffre →" : "Passer pour l'instant"}
+              {anyDone ? t("security_setup.accessVault") : t("security_setup.skipForNow")}
             </button>
           </div>
         </div>
@@ -244,6 +246,7 @@ function SetupCard({ icon, title, description, done, children }: {
   icon: React.ReactNode; title: string; description: string;
   done: boolean; children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       border: `1px solid ${done ? "var(--success)" : "var(--border-light)"}`,
@@ -262,7 +265,7 @@ function SetupCard({ icon, title, description, done, children }: {
         </div>
         <div>
           <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-1)", display: "flex", alignItems: "center", gap: 8 }}>
-            {title} {done && <span className="badge badge-ok">Activé</span>}
+            {title} {done && <span className="badge badge-ok">{t("security_setup.activated")}</span>}
           </div>
           <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>{description}</div>
         </div>

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { getRecentDbs, removeRecentDb, type RecentDb } from "../utils/recentDbs";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 interface Props {
   onCreated: (path: string) => void;
@@ -18,32 +20,32 @@ function sanitizeFilename(name: string): string {
   return name.replace(FORBIDDEN_CHARS, "").trim();
 }
 
-function validateDbName(name: string): string {
-  if (!name.trim()) return "Nom du coffre requis.";
-  if (FORBIDDEN_CHARS.test(name)) return 'Caractères interdits : \\ / : * ? " < > |';
+function validateDbName(name: string, t: TFunction): string {
+  if (!name.trim()) return t("setup.validation.name_required");
+  if (FORBIDDEN_CHARS.test(name)) return t("setup.validation.forbidden_chars");
   return "";
 }
 
-function validatePassword(pw: string): string[] {
+function validatePassword(pw: string, t: TFunction): string[] {
   const errors: string[] = [];
-  if (pw.length < 8) errors.push("Au moins 8 caractères");
-  if (!/[A-Z]/.test(pw)) errors.push("Au moins une majuscule");
-  if (!/[a-z]/.test(pw)) errors.push("Au moins une minuscule");
-  if (!/[0-9]/.test(pw)) errors.push("Au moins un chiffre");
-  if (!/[^A-Za-z0-9]/.test(pw)) errors.push("Au moins un caractère spécial (!@#$…)");
+  if (pw.length < 8) errors.push(t("setup.validation.min_8"));
+  if (!/[A-Z]/.test(pw)) errors.push(t("setup.validation.one_uppercase"));
+  if (!/[a-z]/.test(pw)) errors.push(t("setup.validation.one_lowercase"));
+  if (!/[0-9]/.test(pw)) errors.push(t("setup.validation.one_digit"));
+  if (!/[^A-Za-z0-9]/.test(pw)) errors.push(t("setup.validation.one_special"));
   return errors;
 }
 
-function formatRelativeDate(ms: number): string {
+function formatRelativeDate(ms: number, t: TFunction): string {
   const diff = Date.now() - ms;
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "À l'instant";
-  if (minutes < 60) return `Il y a ${minutes} min`;
+  if (minutes < 1) return t("setup.relative_date.just_now");
+  if (minutes < 60) return t("setup.relative_date.minutes_ago", { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Il y a ${hours}h`;
+  if (hours < 24) return t("setup.relative_date.hours_ago", { count: hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `Il y a ${days} jour${days > 1 ? "s" : ""}`;
-  return new Date(ms).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  if (days < 7) return t("setup.relative_date.days_ago", { count: days });
+  return new Date(ms).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 function truncatePath(path: string, maxLen = 48): string {
@@ -57,6 +59,7 @@ function truncatePath(path: string, maxLen = 48): string {
 }
 
 export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreatedAndUnlocked, recentDbsCount = 5 }: Props) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("open");
   const [recentDbs, setRecentDbs] = useState<RecentDb[]>(() => getRecentDbs());
 
@@ -74,19 +77,19 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
   const [openError, setOpenError] = useState("");
   const [openingRecentPath, setOpeningRecentPath] = useState<string | null>(null);
 
-  const nameError = touched ? validateDbName(dbName) : "";
-  const matchError = touched && confirmPw && confirmPw !== masterPw ? "Les mots de passe ne correspondent pas." : "";
+  const nameError = touched ? validateDbName(dbName, t) : "";
+  const matchError = touched && confirmPw && confirmPw !== masterPw ? t("setup.validation.passwords_mismatch") : "";
 
   const handleCreate = async () => {
     setTouched(true);
     setCreateError("");
-    if (validateDbName(dbName)) return;
-    if (validatePassword(masterPw).length > 0) return;
+    if (validateDbName(dbName, t)) return;
+    if (validatePassword(masterPw, t).length > 0) return;
     if (masterPw !== confirmPw) return;
 
     const safeName = sanitizeFilename(dbName);
     const path = await save({
-      title: "Enregistrer le coffre",
+      title: t("setup.save_dialog_title"),
       defaultPath: `${safeName}.kv`,
       filters: [{ name: "Vaultix Database", extensions: ["kv"] }],
     });
@@ -108,7 +111,7 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
   const handleBrowse = async () => {
     setOpenError("");
     const path = await open({
-      title: "Ouvrir un coffre",
+      title: t("setup.open_dialog_title"),
       filters: [{ name: "Vaultix Database", extensions: ["kv"] }],
       multiple: false,
     });
@@ -128,7 +131,7 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
     setOpenError("");
     const exists = await invoke<boolean>("file_exists", { path });
     if (!exists) {
-      setOpenError(`Fichier introuvable — il a peut-être été déplacé ou supprimé :\n${path}`);
+      setOpenError(t("setup.file_not_found", { path }));
       return;
     }
     setOpeningRecentPath(path);
@@ -156,16 +159,16 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
             <LockIcon size={26} color="#fff" />
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-1)" }}>Vaultix</div>
-          <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 4 }}>Gestionnaire de mots de passe sécurisé</div>
+          <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 4 }}>{t("setup.subtitle")}</div>
         </div>
 
         {/* Tabs */}
         <div className="setup-tabs">
           <button className={`setup-tab ${tab === "open" ? "active" : ""}`} onClick={() => setTab("open")}>
-            Ouvrir un coffre
+            {t("setup.tab_open")}
           </button>
           <button className={`setup-tab ${tab === "create" ? "active" : ""}`} onClick={() => setTab("create")}>
-            Nouveau coffre
+            {t("setup.tab_new")}
           </button>
         </div>
 
@@ -176,7 +179,7 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
             {recentDbs.length > 0 && (
               <div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-                  Coffres récents
+                  {t("setup.recent_vaults")}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {recentDbs.slice(0, recentDbsCount).map((db, i) => (
@@ -208,7 +211,7 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
                           {truncatePath(db.path)}
                         </div>
                         <div style={{ fontSize: 10, color: "var(--text-3)", marginTop: 1 }}>
-                          {formatRelativeDate(db.openedAt)}
+                          {formatRelativeDate(db.openedAt, t)}
                         </div>
                       </div>
 
@@ -224,12 +227,12 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
                             ? <span className="spinner" style={{ width: 12, height: 12 }} />
                             : <FolderOpenIcon size={13} />
                           }
-                          {openingRecentPath === db.path ? "" : "Ouvrir"}
+                          {openingRecentPath === db.path ? "" : t("common.open")}
                         </button>
                         <button
                           className="btn-icon"
                           onClick={() => handleRemoveRecent(db.path)}
-                          title="Retirer de la liste"
+                          title={t("setup.remove_from_list")}
                           style={{ color: "var(--text-3)" }}
                         >
                           <XIcon size={13} />
@@ -247,8 +250,8 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
 
             <p style={{ color: "var(--text-2)", fontSize: 13, margin: 0, lineHeight: 1.6 }}>
               {recentDbs.length > 0
-                ? "Ou sélectionnez un autre fichier :"
-                : <>Sélectionnez un fichier coffre Vaultix (<code style={{ color: "var(--accent)" }}>.kv</code>).</>
+                ? t("setup.select_other")
+                : <>{t("setup.select_file")} (<code style={{ color: "var(--accent)" }}>.kv</code>).</>
               }
             </p>
 
@@ -256,7 +259,7 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
 
             <button className="btn btn-ghost btn-sm" onClick={handleBrowse} disabled={opening} style={{ alignSelf: "flex-start" }}>
               {opening ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <FolderIcon size={15} />}
-              {opening ? "Ouverture..." : "Parcourir…"}
+              {opening ? t("setup.opening") : t("setup.browse")}
             </button>
           </div>
         )}
@@ -265,21 +268,21 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
         {tab === "create" && (
           <div style={{ padding: "22px 24px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
             <div className="field-group">
-              <label className="field-label">Nom du coffre</label>
+              <label className="field-label">{t("setup.vault_name")}</label>
               <input
                 className="input"
                 value={dbName}
                 onChange={e => setDbName(e.target.value.replace(FORBIDDEN_CHARS, ""))}
-                placeholder="Mon coffre"
+                placeholder={t("setup.vault_name_placeholder")}
               />
               {nameError && <div style={{ fontSize: 11, color: "var(--danger)", marginTop: 3 }}>{nameError}</div>}
               <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 3 }}>
-                Caractères interdits : \ / : * ? " &lt; &gt; |
+                {t("setup.forbidden_chars")}
               </div>
             </div>
 
             <div className="field-group">
-              <label className="field-label">Mot de passe maître</label>
+              <label className="field-label">{t("setup.master_password")}</label>
               <div className="input-wrap">
                 <input
                   className="input"
@@ -287,7 +290,7 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
                   value={masterPw}
                   onChange={e => setMasterPw(e.target.value)}
                   onBlur={() => setTouched(true)}
-                  placeholder="Minimum 8 caractères"
+                  placeholder={t("setup.password_min")}
                   autoComplete="new-password"
                 />
                 <div className="input-wrap-actions">
@@ -296,15 +299,15 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
                   </button>
                 </div>
               </div>
-              {masterPw && <PwStrengthBar password={masterPw} />}
+              {masterPw && <PwStrengthBar password={masterPw} t={t} />}
               {touched && (
                 <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 3 }}>
                   {[
-                    { label: "Au moins 8 caractères", ok: masterPw.length >= 8 },
-                    { label: "Au moins une majuscule", ok: /[A-Z]/.test(masterPw) },
-                    { label: "Au moins une minuscule", ok: /[a-z]/.test(masterPw) },
-                    { label: "Au moins un chiffre", ok: /[0-9]/.test(masterPw) },
-                    { label: "Au moins un caractère spécial", ok: /[^A-Za-z0-9]/.test(masterPw) },
+                    { label: t("setup.validation.min_8"), ok: masterPw.length >= 8 },
+                    { label: t("setup.validation.one_uppercase"), ok: /[A-Z]/.test(masterPw) },
+                    { label: t("setup.validation.one_lowercase"), ok: /[a-z]/.test(masterPw) },
+                    { label: t("setup.validation.one_digit"), ok: /[0-9]/.test(masterPw) },
+                    { label: t("setup.validation.one_special"), ok: /[^A-Za-z0-9]/.test(masterPw) },
                   ].map(r => (
                     <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: r.ok ? "var(--success)" : "var(--danger)" }}>
                       {r.ok ? "✓" : "✗"} {r.label}
@@ -315,27 +318,27 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
             </div>
 
             <div className="field-group">
-              <label className="field-label">Confirmer le mot de passe</label>
+              <label className="field-label">{t("setup.confirm_password")}</label>
               <input
                 className="input"
                 type={showPw ? "text" : "password"}
                 value={confirmPw}
                 onChange={e => setConfirmPw(e.target.value)}
-                placeholder="Répéter le mot de passe"
+                placeholder={t("setup.repeat_password")}
                 autoComplete="new-password"
               />
               {matchError && <div style={{ fontSize: 11, color: "var(--danger)", marginTop: 3 }}>{matchError}</div>}
             </div>
 
             <div className="info-msg" style={{ fontSize: 11 }}>
-              Chiffrement AES-256-GCM + dérivation Argon2id. Sans ce mot de passe, les données sont irrécupérables.
+              {t("setup.encryption_info")}
             </div>
 
             {createError && <div className="error-msg"><span>⚠</span>{createError}</div>}
 
             <button className="btn btn-primary" onClick={handleCreate} disabled={creating} style={{ marginTop: 4 }}>
               {creating ? <span className="spinner" style={{ width: 14, height: 14 }} /> : null}
-              {creating ? "Création..." : "Créer le coffre"}
+              {creating ? t("setup.creating") : t("setup.create_vault")}
             </button>
           </div>
         )}
@@ -345,11 +348,17 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
 }
 
 // ── Strength bar ──────────────────────────────────────────────────────────────
-function PwStrengthBar({ password }: { password: string }) {
-  const errors = validatePassword(password);
+function PwStrengthBar({ password, t }: { password: string; t: TFunction }) {
+  const errors = validatePassword(password, t);
   const score = Math.min(4, Math.max(0, 4 - errors.length));
   const colors = ["#ef4444", "#f97316", "#f59e0b", "#22c55e", "#10b981"];
-  const labels = ["Très faible", "Faible", "Moyen", "Fort", "Très fort"];
+  const labels = [
+    t("setup.strength.very_weak"),
+    t("setup.strength.weak"),
+    t("setup.strength.medium"),
+    t("setup.strength.strong"),
+    t("setup.strength.very_strong"),
+  ];
   return (
     <div className="pw-strength-row" style={{ marginTop: 5 }}>
       {[0, 1, 2, 3, 4].map(i => (
