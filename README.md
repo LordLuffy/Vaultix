@@ -169,15 +169,3 @@ Vaultix/
 ## Licence
 
 Ce projet est distribué sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour les détails.
-
----
-
-## Contribuer
-
-Les contributions sont les bienvenues. Ouvrez une issue ou une pull request.
-
-1. Fork le projet
-2. Créez votre branche : `git checkout -b feature/ma-fonctionnalite`
-3. Committez vos changements : `git commit -m "feat: ma fonctionnalité"`
-4. Pushez la branche : `git push origin feature/ma-fonctionnalite`
-5. Ouvrez une Pull Request
