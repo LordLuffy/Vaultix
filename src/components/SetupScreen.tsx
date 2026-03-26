@@ -64,7 +64,7 @@ export default function SetupScreen({ onCreated: _onCreated, onOpened, onCreated
   const [recentDbs, setRecentDbs] = useState<RecentDb[]>(() => getRecentDbs());
 
   // Create tab state
-  const [dbName, setDbName] = useState("Mon coffre");
+  const [dbName, setDbName] = useState("My vault");
   const [masterPw, setMasterPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [showPw, setShowPw] = useState(false);

@@ -1,17 +1,17 @@
 import { invoke } from "@tauri-apps/api/core";
 
 /**
- * Initialise (ou désactive) le mode debug côté Rust.
- * À appeler dès que debugMode ou logPath changent dans les settings.
+ * Initializes (or disables) debug mode on the Rust side.
+ * Call whenever debugMode or logPath change in settings.
  */
 export function initLogger(enabled: boolean, logPath: string): void {
   invoke("set_debug_mode", { enabled, logPath }).catch(() => {});
 }
 
 /**
- * Écrit une ligne dans le fichier de log (no-op si debug désactivé côté Rust).
- * @param component  Nom du composant/module source (ex: "App", "Vault", "Tray")
- * @param message    Message à journaliser
+ * Writes a line to the log file (no-op if debug is disabled on the Rust side).
+ * @param component  Name of the source component/module (e.g. "App", "Vault", "Tray")
+ * @param message    Message to log
  */
 export function log(component: string, message: string): void {
   invoke("write_log", { message: `[${component}] ${message}` }).catch(() => {});

@@ -11,7 +11,8 @@ import { detectProtocol, getDisplayHost } from "../utils/protocol";
 import EntryPanel from "./EntryPanel";
 import GeneratorModal from "./GeneratorModal";
 import SettingsPanel from "./SettingsPanel";
-import UpdateBanner from "./UpdateBanner";
+import UpdateModal from "./UpdateModal";
+import ChangelogModal from "./ChangelogModal";
 
 interface Props {
   dbMeta: DatabaseMeta;
@@ -46,7 +47,7 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
   vnc:    { label: "VNC",    color: "#7c3aed" },
   telnet:     { label: "Telnet",      color: "#dc2626" },
   teamviewer: { label: "TeamViewer",  color: "#0066cc" },
-  other:      { label: "Autre",       color: "#64748b" },
+  other:      { label: "Other",       color: "#64748b" },
   note:       { label: "Note",        color: "#f59e0b" },
 };
 
@@ -78,21 +79,39 @@ const [search, setSearch] = useState("");
   const [appVersion, setAppVersion] = useState<string>("");
   useEffect(() => { getVersion().then(setAppVersion).catch(() => {}); }, []);
 
-  // ── Auto-update check ────────────────────────────────────────────────────────
+  // ── Update check ─────────────────────────────────────────────────────────────
   const [updateInfo, setUpdateInfo] = useState<{ version: string; notes?: string } | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateChecked, setUpdateChecked] = useState<"idle" | "up_to_date" | "error">("idle");
+
+  // Check on startup (5 s delay to avoid blocking startup)
   useEffect(() => {
-    if (!settings.autoUpdateEnabled) return;
-    // Delay 5 s to avoid blocking startup
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const result = await invoke<{ version: string; notes?: string } | null>("check_update");
-        if (result) setUpdateInfo(result);
+        if (result) { setUpdateInfo(result); setShowUpdateModal(true); }
       } catch {
-        // Silently ignore — network may be unavailable or pubkey not yet set
+        // Silently ignore — network may be unavailable
       }
     }, 5000);
-    return () => clearTimeout(t);
-  }, [settings.autoUpdateEnabled]);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    setUpdateChecked("idle");
+    try {
+      const result = await invoke<{ version: string; notes?: string } | null>("check_update");
+      if (result) { setUpdateInfo(result); setShowUpdateModal(true); }
+      else setUpdateChecked("up_to_date");
+    } catch {
+      setUpdateChecked("error");
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
 const loadEntries = useCallback(async () => {
     const data = await invoke<PasswordEntry[]>("get_entries");
@@ -292,7 +311,7 @@ const loadEntries = useCallback(async () => {
     settings.backupMaxCount, settings.backupNamePattern, dbPath,
   ]);
 
-  // Timer périodique — vérifie toutes les 60 s si une sauvegarde est due
+  // Periodic timer — checks every 60 s whether a backup is due
   useEffect(() => {
     if (!settings.backupEnabled || !settings.backupPath || settings.backupIntervalHours <= 0) return;
     const timer = setInterval(runBackupIfDue, 60_000);
@@ -576,7 +595,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <img src="/LockSafe.ico" alt="" style={{ width: 20, height: 20, objectFit: "contain" }} />
+            <img src="/LockSafe.ico" alt="" style={{ width: 22, height: 22, objectFit: "contain" }} />
           </div>
           <div>
             <div className="sidebar-title">Vaultix</div>
@@ -609,7 +628,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
               countFor={folderEntryCount}
             />
           ))}
-          {/* Favoris & Réutilisés */}
+          {/* Favourites & Reused */}
           <button
             className={`sidebar-item ${category === "favorites" ? "active" : ""}`}
             onClick={() => { setCategory("favorites"); setSelectedFolder(null); }}
@@ -671,29 +690,57 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
 
 
         <div className="sidebar-footer">
-          <button className="sidebar-item" onClick={() => setShowGenerator(true)}>
-            <KeyIcon size={16} /> {t("vault.generator")}
-          </button>
-          <button className="sidebar-item" onClick={() => setShowSettings(true)}>
-            <SettingsIcon size={16} /> {t("vault.settings")}
-          </button>
-          <div className="divider" />
-          <button className="sidebar-item" onClick={doLock} title={lockLabel}>
-            <LockIcon size={16} /> {t("vault.lock")}
-          </button>
-          <button className="sidebar-item" onClick={doClose} style={{ color: "var(--text-3)" }}>
-            <XIcon size={16} /> {t("vault.change_vault")}
-          </button>
-          {updateInfo && (
-            <UpdateBanner
-              version={updateInfo.version}
-              notes={updateInfo.notes}
-              onDismiss={() => setUpdateInfo(null)}
-            />
-          )}
-          <div className="divider" />
-          <div style={{ textAlign: "center", fontSize: 11, fontWeight: 600, fontVariant: "small-caps", color: "var(--text-3)", opacity: 0.8, padding: "2px 0 4px", letterSpacing: "0.06em" }}>
-            Vaultix {appVersion ? `v${appVersion}` : ""}
+          {/* ── Groupe 1 : actions principales ── */}
+          <div style={{ padding: "10px 8px 14px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 6 }}>
+            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }} onClick={() => setShowGenerator(true)}>
+              <KeyIcon size={14} /> {t("vault.generator")}
+            </button>
+            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }} onClick={() => setShowSettings(true)}>
+              <SettingsIcon size={14} /> {t("vault.settings")}
+            </button>
+            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }} onClick={doLock} title={lockLabel}>
+              <LockIcon size={14} /> {t("vault.lock")}
+            </button>
+            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }} onClick={doClose}>
+              <XIcon size={14} /> {t("vault.change_vault")}
+            </button>
+          </div>
+
+          {/* ── Group 2: check for updates ── */}
+          <div style={{ padding: "8px 8px 0", borderTop: "1px solid var(--border)" }}>
+            <button
+              className="btn btn-ghost"
+              onClick={handleCheckUpdate}
+              disabled={checkingUpdate}
+              style={{
+                width: "100%", justifyContent: "center",
+                color: updateChecked === "up_to_date" ? "var(--accent)" : updateChecked === "error" ? "#ef4444" : undefined,
+              }}
+            >
+              {checkingUpdate
+                ? <><SpinSidebarIcon size={14} /> {t("vault.checking_updates")}</>
+                : updateChecked === "up_to_date"
+                  ? <><CheckSidebarIcon size={14} /> {t("vault.up_to_date")}</>
+                  : updateChecked === "error"
+                    ? <><RefreshSidebarIcon size={14} /> {t("vault.update_error")}</>
+                    : <><RefreshSidebarIcon size={14} /> {t("vault.check_updates")}</>
+              }
+            </button>
+          </div>
+
+          {/* ── Version + Notes de version ── */}
+          <div style={{ padding: "6px 8px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-3)", letterSpacing: "0.07em", textTransform: "uppercase" }}>
+              Vaultix {appVersion ? `v${appVersion}` : ""}
+            </span>
+            <button
+              onClick={() => setShowChangelog(true)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-3)", textDecoration: "underline", textUnderlineOffset: "2px", transition: "color 0.15s", padding: "1px 0" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "var(--text-2)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
+            >
+              {t("vault.release_notes")}
+            </button>
           </div>
         </div>
       </aside>
@@ -708,8 +755,16 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
               : category === "expired" ? t("vault.expired")
               : category}
           </h1>
+          <button className="btn btn-primary btn-sm" onClick={() => { setSelectedId(null); setPanelMode("new"); }}>
+            <PlusIcon size={13} /> {t("vault.new_entry")}
+          </button>
+        </div>
+
+        {/* Search + Sort toolbar */}
+        <div style={{ display: (category === "reused") ? "none" : "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-card)", flexWrap: "wrap" }}>
+          {/* Search on the left */}
           <div className="search-wrap">
-            <SearchIcon size={16} />
+            <SearchIcon size={14} />
             <input
               ref={searchRef}
               className="search-input"
@@ -727,14 +782,14 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
               </button>
             )}
           </div>
-          <button className="btn btn-primary btn-sm" onClick={() => { setSelectedId(null); setPanelMode("new"); }}>
-            <PlusIcon size={13} /> {t("vault.new_entry")}
-          </button>
-        </div>
 
-        {/* Sort toolbar + search count */}
-        <div style={{ display: (category === "reused") ? "none" : "flex", alignItems: "center", gap: 6, padding: "0 16px 10px", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 4 }}>
+          {/* Count — right after search, like TeamsManager */}
+          <span style={{ fontSize: 12, color: "var(--text-3)", whiteSpace: "nowrap" }}>
+            {filtered.length} {filtered.length !== 1 ? t("vault.results_many") : t("vault.result_one")}
+          </span>
+
+          {/* Sort buttons pushed to the far right */}
+          <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
             {[
               { label: "A→Z",                    field: "title" as SortField,      dir: "asc" as SortDir },
               { label: "Z→A",                    field: "title" as SortField,      dir: "desc" as SortDir },
@@ -746,7 +801,6 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                 <button
                   key={p.label}
                   className={`btn btn-sm ${active ? "btn-primary" : "btn-ghost"}`}
-                  style={{ fontSize: 11, padding: "3px 8px" }}
                   onClick={() => setPresetSort(p.field, p.dir)}
                 >
                   {p.label}
@@ -754,11 +808,6 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
               );
             })}
           </div>
-          {isSearchActive && (
-            <span style={{ fontSize: 12, color: "var(--text-3)", marginLeft: "auto" }}>
-              {t("vault.results", { count: filtered.length })}
-            </span>
-          )}
         </div>
 
         {/* ── Filter bar ── */}
@@ -794,9 +843,9 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => { setSelectedFolder(null); setTypeFilter("all"); }}
-              style={{ fontSize: 12 }}
+              style={{ color: "var(--text-3)" }}
             >
-              ✕ {t("vault.clear_filters")}
+              <XIcon size={12} /> {t("vault.clear_filters")}
             </button>
           )}
         </div>
@@ -858,64 +907,61 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                     <td>
                       <div className="title-cell">
                         <div className="entry-icon">{entry.url ? getFavicon(entry.url) : <LockIcon size={13} />}</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <span title={entry.title} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.title}</span>
-                            {entry.totp_secret && <TotpIcon size={12} style={{ color: "var(--info)", flexShrink: 0 }} />}
-                            {/* Protocol type badge */}
-                            {(() => {
-                              const tm = TYPE_META[entry.entry_type ?? "login"];
-                              if (!tm) return null;
-                              return (
-                                <span style={{
-                                  fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700,
-                                  background: tm.color + "22", color: tm.color,
-                                  border: `1px solid ${tm.color}44`, flexShrink: 0, letterSpacing: "0.02em",
-                                }}>
-                                  {tm.label}
-                                </span>
-                              );
-                            })()}
-                            {/* Expiry badge */}
-                            {entry.expires_at && (() => {
-                              const diff = Math.ceil((entry.expires_at - nowTs) / 86400);
-                              const isExpired = diff <= 0;
-                              const isSoon = !isExpired && diff <= 7;
-                              if (!isExpired && !isSoon) return null;
-                              return (
-                                <span title={isExpired ? t("entry.expired_days_ago", { count: Math.abs(diff) }) : t("entry.expires_in_days_short", { count: diff })} style={{
-                                  fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700, flexShrink: 0,
-                                  background: isExpired ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
-                                  color: isExpired ? "var(--danger)" : "var(--warning)",
-                                  border: `1px solid ${isExpired ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.3)"}`,
-                                }}>
-                                  {isExpired ? t("entry.expired_badge") : `${diff}d`}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                          {/* Tag badges */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0, overflow: "hidden" }}>
+                          <span title={entry.title} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1 1 auto", minWidth: 0 }}>{entry.title}</span>
+                          {entry.totp_secret && <TotpIcon size={12} style={{ color: "var(--info)", flexShrink: 0 }} />}
+                          {/* Protocol type badge */}
                           {(() => {
-                            const entryTags = entry.tags ?? [];
-                            const badges = entryTags.length > 0 ? entryTags : (entry.category ? [entry.category] : []);
-                            if (badges.length === 0) return null;
+                            const tm = TYPE_META[entry.entry_type ?? "login"];
+                            if (!tm) return null;
                             return (
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                                {badges.map(t => {
-                                  const c = settings.tagColors?.[t] ?? "";
-                                  return (
-                                    <span key={t} title={t} style={{
-                                      fontSize: 10, padding: "2px 6px", borderRadius: 8, lineHeight: 1.5,
-                                      background: c ? c + "30" : "rgba(255,255,255,0.08)",
-                                      border: `1px solid ${c ? c + "66" : "rgba(255,255,255,0.15)"}`,
-                                      color: c || "var(--text-2)",
-                                      whiteSpace: "nowrap", fontWeight: 500,
-                                    }}>{t}</span>
-                                  );
-                                })}
-                              </div>
+                              <span style={{
+                                fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 700,
+                                background: tm.color + "22", color: tm.color,
+                                border: `1px solid ${tm.color}44`, flexShrink: 0, letterSpacing: "0.02em",
+                              }}>
+                                {tm.label}
+                              </span>
                             );
                           })()}
+                          {/* Expiry badge */}
+                          {entry.expires_at && (() => {
+                            const diff = Math.ceil((entry.expires_at - nowTs) / 86400);
+                            const isExpired = diff <= 0;
+                            const isSoon = !isExpired && diff <= 7;
+                            if (!isExpired && !isSoon) return null;
+                            return (
+                              <span title={isExpired ? t("entry.expired_days_ago", { count: Math.abs(diff) }) : t("entry.expires_in_days_short", { count: diff })} style={{
+                                fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 700, flexShrink: 0,
+                                background: isExpired ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
+                                color: isExpired ? "var(--danger)" : "var(--warning)",
+                                border: `1px solid ${isExpired ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.3)"}`,
+                              }}>
+                                {isExpired ? t("entry.expired_badge") : `${diff}d`}
+                              </span>
+                            );
+                          })()}
+                          {/* Tag badges — max 2, inline */}
+                          {(entry.tags ?? []).slice(0, 2).map(tag => {
+                            const c = settings.tagColors?.[tag] ?? "";
+                            return (
+                              <span key={tag} title={tag} style={{
+                                fontSize: 10, padding: "1px 6px", borderRadius: 8, fontWeight: 500, flexShrink: 0,
+                                background: c ? c + "30" : "rgba(255,255,255,0.08)",
+                                border: `1px solid ${c ? c + "66" : "rgba(255,255,255,0.15)"}`,
+                                color: c || "var(--text-2)",
+                                whiteSpace: "nowrap",
+                              }}>{tag}</span>
+                            );
+                          })}
+                          {/* +N more tags indicator */}
+                          {(entry.tags ?? []).length > 2 && (
+                            <span style={{
+                              fontSize: 10, padding: "1px 5px", borderRadius: 8, fontWeight: 500, flexShrink: 0,
+                              background: "rgba(255,255,255,0.08)", color: "var(--text-3)",
+                              border: "1px solid rgba(255,255,255,0.12)",
+                            }}>+{(entry.tags ?? []).length - 2}</span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -1052,7 +1098,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
       )}
 
       {/* ── Modals ── */}
-      {showGenerator && <GeneratorModal onClose={() => setShowGenerator(false)} onUse={() => setShowGenerator(false)} />}
+      {showGenerator && <GeneratorModal onClose={() => setShowGenerator(false)} />}
       {generatorCallback && (
         <GeneratorModal
           onClose={() => setGeneratorCallback(null)}
@@ -1060,6 +1106,12 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
         />
       )}
       {showSettings && <SettingsPanel settings={settings} onSettingsChange={handleSettingsChange} onClose={() => setShowSettings(false)} dbPath={dbPath} />}
+      {showUpdateModal && updateInfo && (
+        <UpdateModal version={updateInfo.version} notes={updateInfo.notes} onClose={() => setShowUpdateModal(false)} />
+      )}
+      {showChangelog && (
+        <ChangelogModal appVersion={appVersion} onClose={() => setShowChangelog(false)} />
+      )}
 
       {toast && <div className="copy-toast">{toast}</div>}
 
@@ -1350,6 +1402,10 @@ function DotsIcon({ size = 14 }: { size?: number }) {
     </svg>
   );
 }
+
+function RefreshSidebarIcon({ size = 14 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>; }
+function SpinSidebarIcon({ size = 14 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>; }
+function CheckSidebarIcon({ size = 14 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>; }
 
 // ── Folder tree item ──────────────────────────────────────────────────────────
 function FolderTreeItem({ node, depth, selectedFolder, expanded, onSelect, onToggle, countFor }: {

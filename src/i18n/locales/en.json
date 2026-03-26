@@ -153,6 +153,8 @@
     "change_vault": "Change vault",
     "clear_search": "Clear search",
     "results": "{{count}} result(s)",
+    "result_one": "result",
+    "results_many": "results",
     "folder_all": "All folders",
     "clear_filters": "Clear filters",
     "empty_category": "No entries in this category.",
@@ -177,7 +179,12 @@
     "reused_summary": "{{groups}} group(s) — {{entries}} affected entry(-ies)",
     "same_password": "{{count}} entry(-ies) with the same password",
     "delete_confirm": "Delete \"{{title}}\"?",
-    "copy_label": "Copy"
+    "copy_label": "Copy",
+    "check_updates": "Check for updates",
+    "checking_updates": "Checking…",
+    "up_to_date": "Already up to date",
+    "update_error": "Network error",
+    "release_notes": "Release notes"
   },
   "entry": {
     "new_entry": "New entry",
@@ -571,10 +578,19 @@
   },
   "update": {
     "available": "Update available",
+    "whats_new": "What's new",
+    "no_notes": "No release notes.",
     "installing": "Installing…",
     "install": "Install",
     "later": "Later",
     "dismiss": "Dismiss"
+  },
+  "changelog": {
+    "title": "Release notes",
+    "error": "Unable to load release notes.",
+    "empty": "No releases found.",
+    "current": "Current",
+    "no_notes": "No notes for this release."
   },
   "themes": {
     "dark": "Dark",

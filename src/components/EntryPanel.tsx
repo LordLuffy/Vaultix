@@ -239,11 +239,6 @@ export default function EntryPanel({ mode: initialMode, entry, defaultCategory, 
       <div className="panel-header">
         <h2>{title_}</h2>
         <div style={{ display: "flex", gap: 4 }}>
-          {mode === "view" && (
-            <button className="btn-icon" onClick={() => setMode("edit")} title={t("common.edit")}>
-              <EditIcon size={14} />
-            </button>
-          )}
           <button className="btn-icon" onClick={onClose} title={t("common.close")}>
             <XIcon size={14} />
           </button>

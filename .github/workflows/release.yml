@@ -1,60 +1,85 @@
 name: Release
 
-# Déclenché quand tu pousses un tag de la forme v1.2.3
 on:
   push:
     tags:
-      - "v*"
+      - 'v*.*.*'
 
 jobs:
   release:
-    permissions:
-      contents: write   # nécessaire pour créer la release GitHub
-
     runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      # 1 — Checkout du code
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
-      # 2 — Node.js (pour le build Vite / frontend)
-      - uses: actions/setup-node@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
-      # 3 — Rust stable
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-
-      # 4 — Cache Rust pour accélérer les builds suivants
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-
-      # 5 — Dépendances npm
-      - name: Install npm dependencies
+      - name: Install frontend dependencies
         run: npm ci
 
-      # 6 — Build + sign + release via tauri-action
-      #     Cette action :
-      #       - compile l'app en mode release
-      #       - signe les artefacts avec ta clé privée
-      #       - génère latest.json (endpoint de l'updater)
-      #       - crée la release GitHub et y attache tous les fichiers
-      - uses: tauri-apps/tauri-action@v0
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build and release
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Vaultix ${{ github.ref_name }}"
+          releaseName: 'Teams Manager ${{ github.ref_name }}'
           releaseBody: |
-            ## Nouveautés
-            Voir les commits pour le détail des changements.
+            ## ⚡ Improvements / Enhancements :
+              - Refactoring
+              - Disabling the context menu
+              - UI improvements
+
+            ## 🐞 Bug Fixes / Fixes :
+              - Fix translation
+
+            ## 🔐 Security :
+            - Add SECURITY.md
+            - Upgrading vite to v8.0.3
+            - Upgrading @vitejs/plugin-react to v6.0.1 (compatible Vite 8)
+
+            ## ℹ️ Feedback :
+            Please feel free to submit your feedback via [GitHub Issues](https://github.com/Xenovyrion/Vaultix/issues) to help improve future versions.
           releaseDraft: false
           prerelease: false
-          # Génère latest.json pointant vers les installers NSIS (Windows)
-          updaterJsonPreferNsis: true
+
+      - name: Update README badges
+        run: node scripts/update-badges.cjs
+
+      - name: Commit updated README
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "No badge changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: update README badges for ${{ github.ref_name }}"
+
+      - name: Push README changes to default branch
+        shell: bash
+        run: |
+          git push origin HEAD:${{ github.event.repository.default_branch }}

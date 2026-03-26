@@ -153,6 +153,8 @@
     "change_vault": "Changer de coffre",
     "clear_search": "Effacer la recherche",
     "results": "{{count}} résultat(s)",
+    "result_one": "résultat",
+    "results_many": "résultats",
     "folder_all": "Tous les dossiers",
     "clear_filters": "Effacer les filtres",
     "empty_category": "Aucune entrée dans cette catégorie.",
@@ -177,7 +179,12 @@
     "reused_summary": "{{groups}} groupe(s) — {{entries}} entrée(s) concernée(s)",
     "same_password": "{{count}} entrée(s) avec le même mot de passe",
     "delete_confirm": "Supprimer « {{title}} » ?",
-    "copy_label": "Copie"
+    "copy_label": "Copie",
+    "check_updates": "Vérifier les mises à jour",
+    "checking_updates": "Vérification…",
+    "up_to_date": "Déjà à jour",
+    "update_error": "Erreur réseau",
+    "release_notes": "Notes de version"
   },
   "entry": {
     "new_entry": "Nouvelle entrée",
@@ -572,10 +579,19 @@
   },
   "update": {
     "available": "Mise à jour disponible",
+    "whats_new": "Nouveautés",
+    "no_notes": "Aucune note de version.",
     "installing": "Installation…",
     "install": "Installer",
     "later": "Plus tard",
     "dismiss": "Ignorer"
+  },
+  "changelog": {
+    "title": "Notes de version",
+    "error": "Impossible de charger les notes de version.",
+    "empty": "Aucune version trouvée.",
+    "current": "Actuelle",
+    "no_notes": "Aucune note pour cette version."
   },
   "themes": {
     "dark": "Sombre",

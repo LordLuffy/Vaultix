@@ -16,23 +16,21 @@ export interface AppSettings {
   backupPath: string;
   backupMaxCount: number; // 0 = unlimited
   backupIntervalHours: number; // in hours (0.5 = 30 min)
-  backupNamePattern: string;  // {name} {date} {time} → ex: {date}_{time}_{name}
-  // Presse-papiers
-  clipboardClearSeconds: number; // 0 = désactivé, sinon délai en secondes
-  clipboardClearOnLock: boolean;  // effacer au verrouillage / fermeture
-  // Sécurité / comportement
-  minimizeOnLock: boolean;           // minimiser la fenêtre au verrouillage
-  excludeExpiredFromSearch: boolean; // masquer les expirées dans les résultats
-  // Apparence
-  zebraStripes: boolean;  // lignes alternées dans la liste
+  backupNamePattern: string;  // {name} {date} {time} → e.g. {date}_{time}_{name}
+  // Clipboard
+  clipboardClearSeconds: number; // 0 = disabled, delay in seconds
+  clipboardClearOnLock: boolean;  // clear on lock / close
+  // Security / behaviour
+  minimizeOnLock: boolean;           // minimize window on lock
+  excludeExpiredFromSearch: boolean; // hide expired entries from search results
+  // Appearance
+  zebraStripes: boolean;  // alternating rows in the list
   // Interface
-  recentDbsCount: number; // nombre de coffres récents à afficher (3, 5 ou 10)
-  systemTrayEnabled: boolean; // afficher l'icône dans la barre système
+  recentDbsCount: number; // number of recent vaults to display (3, 5 or 10)
+  systemTrayEnabled: boolean; // show icon in system tray
   // Debug / logs
-  debugMode: boolean;  // active l'écriture de logs dans un fichier
-  logPath:   string;   // chemin du fichier de log
-  // Updates
-  autoUpdateEnabled: boolean; // vérifier les mises à jour au démarrage
+  debugMode: boolean;  // enables log file writing
+  logPath:   string;   // path to the log file
   // Keyboard shortcuts
   shortcuts: ShortcutMap;
 }
@@ -62,7 +60,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   systemTrayEnabled: false,
   debugMode: false,
   logPath:   "",
-  autoUpdateEnabled: true,
   shortcuts: DEFAULT_SHORTCUTS,
 };
 

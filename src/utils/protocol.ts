@@ -82,7 +82,7 @@ export function detectProtocol(url: string): ProtocolInfo | null {
   if (!url) return null;
   const u = url.trim().toLowerCase();
   const found = PROTOCOL_MAP.find(p => p.test(u));
-  return found ?? { type: "other", label: "Ouvrir", color: "var(--text-3)", openable: true, buildUrl: u => u };
+  return found ?? { type: "other", label: "Open", color: "var(--text-3)", openable: true, buildUrl: u => u };
 }
 
 export function getDisplayHost(url: string): string {

@@ -121,7 +121,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     },
   },
   {
-    id: "ocean", name: "Océan", isDark: true, preview: "#00b4d8",
+    id: "ocean", name: "Ocean", isDark: true, preview: "#00b4d8",
     vars: {
       "--bg-primary":   "#0a0e1a",
       "--bg-card":      "#0d1425",
@@ -141,7 +141,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     },
   },
   {
-    id: "forest", name: "Forêt", isDark: true, preview: "#4ade80",
+    id: "forest", name: "Forest", isDark: true, preview: "#4ade80",
     vars: {
       "--bg-primary":   "#0d1a0f",
       "--bg-card":      "#112214",

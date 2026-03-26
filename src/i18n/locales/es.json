@@ -153,6 +153,8 @@
     "change_vault": "Cambiar bóveda",
     "clear_search": "Limpiar búsqueda",
     "results": "{{count}} resultado(s)",
+    "result_one": "resultado",
+    "results_many": "resultados",
     "folder_all": "Todas las carpetas",
     "clear_filters": "Limpiar filtros",
     "empty_category": "No hay entradas en esta categoría.",
@@ -177,7 +179,12 @@
     "reused_summary": "{{groups}} grupo(s) — {{entries}} entrada(s) afectada(s)",
     "same_password": "{{count}} entrada(s) con la misma contraseña",
     "delete_confirm": "¿Eliminar \"{{title}}\"?",
-    "copy_label": "Copia"
+    "copy_label": "Copia",
+    "check_updates": "Buscar actualizaciones",
+    "checking_updates": "Verificando…",
+    "up_to_date": "Ya está actualizado",
+    "update_error": "Error de red",
+    "release_notes": "Notas de versión"
   },
   "entry": {
     "new_entry": "Nueva entrada",
@@ -571,10 +578,19 @@
   },
   "update": {
     "available": "Actualización disponible",
+    "whats_new": "Novedades",
+    "no_notes": "Sin notas de versión.",
     "installing": "Instalando…",
     "install": "Instalar",
     "later": "Más tarde",
     "dismiss": "Ignorar"
+  },
+  "changelog": {
+    "title": "Notas de versión",
+    "error": "No se pudieron cargar las notas de versión.",
+    "empty": "No se encontraron versiones.",
+    "current": "Actual",
+    "no_notes": "Sin notas para esta versión."
   },
   "themes": {
     "dark": "Oscuro",

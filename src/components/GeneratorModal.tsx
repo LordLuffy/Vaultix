@@ -6,7 +6,7 @@ import type { TFunction } from "i18next";
 
 interface Props {
   onClose: () => void;
-  onUse: (password: string) => void;
+  onUse?: (password: string) => void;
 }
 
 type Mode = "charset" | "passphrase" | "pattern";
@@ -260,11 +260,13 @@ export default function GeneratorModal({ onClose, onUse }: Props) {
 
         <div className="modal-footer" style={{ flexShrink: 0 }}>
           <button className="btn btn-ghost" onClick={onClose}>{t("common.close")}</button>
-          <button className="btn btn-primary" onClick={() => { onUse(pw); onClose(); }} disabled={!pw}>
-            <CheckIcon size={14} /> {t("generator.use")}
-          </button>
+          {onUse && (
+            <button className="btn btn-primary" onClick={() => { onUse(pw); onClose(); }} disabled={!pw}>
+              <CheckIcon size={13} /> {t("generator.use")}
+            </button>
+          )}
           <button className="btn btn-primary" onClick={handleCopy} disabled={!pw}>
-            {copied ? <><CheckIcon size={14} /> {t("common.copied")}</> : <><CopyIcon size={14} /> {t("common.copy")}</>}
+            {copied ? <><CheckIcon size={13} /> {t("common.copied")}</> : <><CopyIcon size={13} /> {t("common.copy")}</>}
           </button>
         </div>
       </div>

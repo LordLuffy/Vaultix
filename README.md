@@ -1,140 +1,80 @@
-# Vaultix — Gestionnaire de mots de passe
+<p align="center">
+  <img src="src-tauri/icons/Vaultix.ico" width="128" alt="Teams Manager" />
+</p>
 
-> Application de bureau sécurisée pour gérer vos mots de passe, construite avec **Tauri 2**, **Rust** et **React/TypeScript**.
+<h1 align="center">Vaultix</h1>
 
----
+<p align="center">
+  <em>Password Manager</em>
+</p>
 
-## Fonctionnalités
+<p align="center">
+<!-- BADGES:START -->
+<img alt="Release" src="https://img.shields.io/github/v/release/Xenovyrion/Teams-Manager?style=for-the-badge" />
+<img alt="License" src="https://img.shields.io/badge/License-GPL--3.0-F4C430?style=for-the-badge" />
+<img alt="Platform" src="https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge&logo=windows11&logoColor=white" />
+<!-- BADGES:END -->
+</p>
 
-### Sécurité
-- **Chiffrement AES-256-GCM** avec authentification intégrée (AEAD)
-- **Dérivation de clé Argon2id** résistante aux attaques GPU/ASIC et rainbow tables (paramètres KDF configurables)
-- **Compression gzip** des données avant chiffrement (optionnelle)
-- **Vérification des fuites** via l'API HaveIBeenPwned (k-anonymat — le mot de passe ne quitte jamais l'appareil)
-- **Verrouillage automatique** après inactivité configurable
-- Effacement du presse-papiers automatique après délai configurable
-
-### Authentification
-- Mot de passe maître (avec changement et réinitialisation)
-- **Biométrie / Windows Hello** (empreinte, visage, code PIN) via le Credential Manager Windows
-- **TOTP** (Google Authenticator, Authy, Microsoft Authenticator…) avec QR code
-- Prompt d'activation de la 2FA dès la création d'une nouvelle base
-
-### Gestion des entrées
-- Types d'entrées : Web, RDP, SSH, FTP, base de données, carte bancaire, note sécurisée…
-- Champs : titre, identifiant, mot de passe, URL, notes, tags, TOTP, favori, date d'expiration
-- **Historique complet** de chaque champ modifié (mot de passe, login, URL…) avec horodatage
-- **Indicateur d'entropie** du mot de passe en bits
-- **Indicateur de force** visuel (5 niveaux)
-- Codes TOTP live avec compte à rebours
-- Ouverture des URL avec le protocole adapté (http, rdp, ssh, ftp…)
-- Glisser-déposer pour réordonner les entrées
-- Menu contextuel (clic droit)
-
-### Générateur de mots de passe
-- **Mode jeu de caractères** : longueur 4–128, majuscules, minuscules, chiffres, symboles, exclusion des ambigus, caractères personnalisés
-- **Mode phrase secrète** : 2–12 mots, séparateur, capitalisation, ajout de nombre/symbole
-- **Mode motif** : `x`=minuscule, `X`=majuscule, `d`=chiffre, `s`=symbole, `*`=aléatoire, `\c`=littéral
-- Entropie affichée en bits (barre de progression + label coloré)
-
-### Interface
-- 13 thèmes intégrés : Sombre, Clair, Nord, Dracula, Catppuccin, Océan, Forêt, Tokyo Night, Solarized, Gruvbox, Monokai, Rose Pine, Solarized Clair
-- Personnalisation complète des couleurs (color picker en temps réel)
-- Tags avec couleurs personnalisables
-- Icône dans le système tray (fermer = minimiser, pas quitter)
-- Raccourcis clavier entièrement configurables
-
-### Sauvegarde
-- Sauvegarde automatique configurable (locale, réseau UNC, lecteur cloud monté)
-- Fréquence paramétrable (30 min, 1 h, 6 h, 12 h, 24 h, hebdomadaire)
-- Nombre maximum de sauvegardes avec rotation automatique
-- Nommage personnalisable (`{date}_{time}_{name}`)
-
-### Mises à jour
-- Vérification automatique des nouvelles versions via GitHub Releases
-- Notification non intrusive avec notes de version
-- Installation en un clic + redémarrage automatique
+<p align="center">
+<!-- STACK:START -->
+<img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" />
+<img alt="Rust" src="https://img.shields.io/badge/Rust-stable-000000?style=for-the-badge&logo=rust" />
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+<img alt="React" src="https://img.shields.io/badge/React-18.3.1-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+<img alt="Node.js" src="https://img.shields.io/badge/Node.js-%3E%3D24-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
+<img alt="CSS" src="https://img.shields.io/badge/CSS-3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
+<!-- STACK:END -->
+</p>
 
 ---
 
-## Stack technique
-
-| Couche | Technologie |
-|--------|-------------|
-| Frontend | React 18 + TypeScript |
-| Backend | Rust (Tauri 2) |
-| Chiffrement | AES-256-GCM (`aes-gcm`) |
-| KDF | Argon2id (`argon2`) |
-| TOTP | `totp-rs` |
-| Biométrie | `keyring` (Windows Credential Manager) |
-| Mises à jour | `tauri-plugin-updater` + GitHub Releases |
-| Interface | CSS custom (variables CSS, pas de framework UI) |
-| QR Code | `qrcode.react` |
+Secure desktop application to manage your passwords, built with **Tauri 2**, **Rust** and **React/TypeScript**.
 
 ---
 
-## Prérequis
+## 1. Prerequisites
 
-- [Node.js](https://nodejs.org/) ≥ 18
-- [Rust](https://rustup.rs/) (stable, dernière version)
-- Windows 10/11 (support macOS prévu)
+### Development tools
 
----
-
-## Installation & développement
-
-```bash
-# Cloner le dépôt
-git clone https://github.com/LordLuffy/LockSafe.git
-cd LockSafe
-
-# Installer les dépendances JavaScript
-npm install
-
-# Lancer en mode développement (hot-reload)
-npm run tauri dev
-```
-
-## Build de production
-
-```bash
-npm run tauri build
-```
-
-L'installateur se trouve dans `src-tauri/target/release/bundle/nsis/`.
+| Tool | Version | Install |
+|------|---------|---------|
+| Rust | stable | `rustup.rs` |
+| Node.js | 24+ | `nodejs.org` |
+| Tauri CLI | v2 | `cargo install tauri-cli` |
 
 ---
 
-## Structure du projet
+## 2. Project Structure
 
 ```
 Vaultix/
 ├── .github/
 │   └── workflows/
-│       └── release.yml               # CI/CD — build + sign + release automatique
-├── src/                              # Frontend React/TypeScript
+│       └── release.yml               # CI/CD — automated build + sign + release
+├── src/                              # React/TypeScript frontend
 │   ├── components/
-│   │   ├── SetupScreen.tsx           # Création / ouverture d'une base
-│   │   ├── UnlockScreen.tsx          # Déverrouillage
-│   │   ├── SecuritySetupScreen.tsx   # Configuration 2FA post-création
-│   │   ├── Vault.tsx                 # Vue principale du coffre
-│   │   ├── EntryPanel.tsx            # Panneau de détail / édition d'une entrée
-│   │   ├── GeneratorModal.tsx        # Générateur de mots de passe
-│   │   ├── SettingsPanel.tsx         # Paramètres (thème, sécurité, sauvegarde…)
-│   │   └── UpdateBanner.tsx          # Bannière de notification de mise à jour
+│   │   ├── SetupScreen.tsx           # Create / open a vault
+│   │   ├── UnlockScreen.tsx          # Unlock screen
+│   │   ├── SecuritySetupScreen.tsx   # 2FA configuration after creation
+│   │   ├── Vault.tsx                 # Main vault view
+│   │   ├── EntryPanel.tsx            # Entry detail / edit panel
+│   │   ├── GeneratorModal.tsx        # Password generator
+│   │   ├── SettingsPanel.tsx         # Settings (theme, security, backup…)
+│   │   └── UpdateBanner.tsx          # Update notification banner
 │   ├── hooks/
-│   │   └── useSettings.ts            # Gestion des paramètres (localStorage)
+│   │   └── useSettings.ts            # Settings management (localStorage)
 │   ├── utils/
-│   │   ├── recentDbs.ts              # Bases récentes (localStorage)
-│   │   └── protocol.ts               # Détection et ouverture des protocoles URL
-│   ├── themes.ts                     # Définition des 13 thèmes
-│   └── types.ts                      # Types TypeScript partagés
-├── src-tauri/                        # Backend Rust
+│   │   ├── recentDbs.ts              # Recent vaults (localStorage)
+│   │   └── protocol.ts               # URL protocol detection and opening
+│   ├── themes.ts                     # 13 theme definitions
+│   └── types.ts                      # Shared TypeScript types
+├── src-tauri/                        # Rust backend
 │   ├── src/
-│   │   ├── lib.rs                    # Commandes Tauri (invoke handlers)
-│   │   ├── database.rs               # Logique de chiffrement / stockage
-│   │   ├── generator.rs              # Générateur de mots de passe
-│   │   └── updater.rs                # Commandes de mise à jour (check + install)
+│   │   ├── lib.rs                    # Tauri commands (invoke handlers)
+│   │   ├── database.rs               # Encryption / storage logic
+│   │   ├── generator.rs              # Password generator
+│   │   └── updater.rs                # Update commands (check + install)
 │   ├── icons/
 │   │   └── LockSafe.ico
 │   ├── Cargo.toml
@@ -144,34 +84,125 @@ Vaultix/
 
 ---
 
-## Sécurité
+## 3. Tech Stack
 
-- La base de données est un fichier `.kv` chiffré — sans le mot de passe maître, les données sont **irrécupérables**
-- Le mot de passe maître ne quitte jamais la mémoire vive et est effacé (`zeroize`) lors du verrouillage
-- La vérification des fuites (HIBP) utilise le **k-anonymat** : seuls les 5 premiers caractères du hash SHA-1 sont envoyés, jamais le mot de passe en clair
-- La biométrie Windows Hello chiffre le mot de passe maître dans le **Credential Manager** de Windows, protégé par la puce TPM
-- Les mises à jour sont **signées cryptographiquement** — impossible d'installer un artefact non signé par la clé privée du projet
-
----
-
-## Paramètres recommandés
-
-| Paramètre | Valeur recommandée |
-|-----------|-------------------|
-| KDF Mémoire | 64 MiB (256 MiB pour usage haute sécurité) |
-| KDF Itérations | 3 (6+ pour usage haute sécurité) |
-| Verrouillage auto | 15–60 minutes |
-| Sauvegarde | Quotidienne, 10 copies max |
-| Entropie mot de passe | ≥ 80 bits (objectif : 128+ bits) |
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 18 + TypeScript |
+| Backend | Rust (Tauri 2) |
+| Encryption | AES-256-GCM (`aes-gcm`) |
+| KDF | Argon2id (`argon2`) |
+| TOTP | `totp-rs` |
+| Biometrics | `keyring` (Windows Credential Manager) |
+| Updates | `tauri-plugin-updater` + GitHub Releases |
+| Interface | Custom CSS (CSS variables, no UI framework) |
+| QR Code | `qrcode.react` |
 
 ---
 
-## Licence
+## 4. Build
 
-Ce projet est distribué sous licence **GPL-3.0**. Voir le fichier [LICENSE](LICENSE) pour les détails.
+### Development
 
-En résumé :
-- ✅ Tu peux utiliser, modifier et redistribuer librement ce logiciel
-- ✅ Tu peux fork et améliorer le projet
-- ⚠️ Toute version modifiée doit également être publiée sous GPL-3.0
-- ❌ Impossible de forker puis de revendre une version propriétaire fermée
+```bash
+# Install Node dependencies
+npm install
+
+# Start in dev mode (hot-reload)
+npm run tauri dev
+```
+
+The window opens at `http://localhost:1420`. Edit files under `src/` for instant hot-reload.
+
+### Production build
+
+```bash
+npm install
+npm run tauri build
+```
+
+The installer and executable are output to `src-tauri/target/release/bundle/`.
+
+### Rust dependency audit
+
+```bash
+cd src-tauri
+cargo deny check
+```
+
+---
+
+## 5. Features
+
+### Security
+- **AES-256-GCM encryption** with built-in authentication (AEAD)
+- **Argon2id key derivation** resistant to GPU/ASIC and rainbow table attacks (configurable KDF parameters)
+- **gzip compression** of data before encryption (optional)
+- **Breach detection** via the HaveIBeenPwned API (k-anonymity — the password never leaves the device)
+- **Auto-lock** after configurable inactivity timeout
+- Automatic clipboard clearing after a configurable delay
+
+### Authentication
+- Master password (with change and reset)
+- **Biometrics / Windows Hello** (fingerprint, face, PIN) via the Windows Credential Manager
+- **TOTP** (Google Authenticator, Authy, Microsoft Authenticator…) with QR code
+- Prompt to enable 2FA on new vault creation
+
+### Entry Management
+- Entry types: Web, RDP, SSH, FTP, database, bank card, secure note…
+- Fields: title, username, password, URL, notes, tags, TOTP, favourite, expiry date
+- **Full history** of every modified field (password, login, URL…) with timestamps
+- **Entropy indicator** for passwords in bits
+- **Visual strength indicator** (5 levels)
+- Live TOTP codes with countdown timer
+- URL opening with the appropriate protocol (http, rdp, ssh, ftp…)
+- Drag-and-drop to reorder entries
+- Context menu (right-click)
+
+### Password Generator
+- **Character set mode**: length 4–128, uppercase, lowercase, digits, symbols, ambiguous exclusion, custom characters
+- **Passphrase mode**: 2–12 words, separator, capitalisation, append number/symbol
+- **Pattern mode**: `x`=lowercase, `X`=uppercase, `d`=digit, `s`=symbol, `*`=random, `\c`=literal
+- Entropy displayed in bits (progress bar + colour-coded label)
+
+### Interface
+- 13 built-in themes: Dark, Light, Nord, Dracula, Catppuccin, Ocean, Forest, Tokyo Night, Solarized, Gruvbox, Monokai, Rose Pine, Solarized Light
+- Full colour customisation (real-time colour picker)
+- Tags with customisable colours
+- System tray icon (close = minimise, not quit)
+- Fully configurable keyboard shortcuts
+
+### Backup
+- Configurable automatic backup (local, UNC network path, mounted cloud drive)
+- Configurable frequency (30 min, 1 h, 6 h, 12 h, 24 h, weekly)
+- Maximum backup count with automatic rotation
+- Customisable naming (`{date}_{time}_{name}`)
+
+### Updates
+- Automatic check for new versions via GitHub Releases
+- Non-intrusive notification with release notes
+- One-click install + automatic restart
+
+---
+
+## 6. Security
+
+- The database is an encrypted `.kv` file — without the master password, the data is **unrecoverable**
+- The master password never leaves RAM and is wiped (`zeroize`) on lock
+- Breach detection (HIBP) uses **k-anonymity**: only the first 5 characters of the SHA-1 hash are sent, never the plaintext password
+- Windows Hello biometrics encrypt the master password in the Windows **Credential Manager**, protected by the TPM chip
+- Updates are **cryptographically signed** — it is impossible to install an artifact not signed by the project's private key
+
+---
+
+## 7. Recommended Settings
+
+| Setting | Recommended value |
+|---------|------------------|
+| KDF Memory | 64 MiB (256 MiB for high-security use) |
+| KDF Iterations | 3 (6+ for high-security use) |
+| Auto-lock | 15–60 minutes |
+| Backup | Daily, max 10 copies |
+| Password entropy | ≥ 80 bits (target: 128+ bits) |
+
+---

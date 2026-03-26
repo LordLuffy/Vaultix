@@ -33,7 +33,7 @@ export interface PasswordEntry {
   history: EntryHistorySnapshot[];
   entry_type: EntryType;
   extra_fields: [string, string][];
-  expires_at: number | null; // unix timestamp, null = pas d'expiration
+  expires_at: number | null; // unix timestamp, null = no expiry
 }
 
 export interface DatabaseMeta {
@@ -150,12 +150,12 @@ export function formatShortcutDisplay(shortcut: string): string {
     if (p === "arrowdown") return "↓";
     if (p === "arrowleft") return "←";
     if (p === "arrowright")return "→";
-    if (p === "delete")    return "Suppr";
+    if (p === "delete")    return "Del";
     if (p === "enter")     return "↵";
     if (p === "escape")    return "Esc";
     if (p === "tab")       return "Tab";
     if (p === "backspace") return "⌫";
-    if (p === " ")         return "Espace";
+    if (p === " ")         return "Space";
     return part.toUpperCase();
   }).join(" + ");
 }

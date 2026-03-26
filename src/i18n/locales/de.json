@@ -153,6 +153,8 @@
     "change_vault": "Tresor wechseln",
     "clear_search": "Suche löschen",
     "results": "{{count}} Ergebnis(se)",
+    "result_one": "Ergebnis",
+    "results_many": "Ergebnisse",
     "folder_all": "Alle Ordner",
     "clear_filters": "Filter löschen",
     "empty_category": "Keine Einträge in dieser Kategorie.",
@@ -177,7 +179,12 @@
     "reused_summary": "{{groups}} Gruppe(n) — {{entries}} betroffene(r) Eintrag/Einträge",
     "same_password": "{{count}} Eintrag/Einträge mit demselben Passwort",
     "delete_confirm": "\"{{title}}\" löschen?",
-    "copy_label": "Kopie"
+    "copy_label": "Kopie",
+    "check_updates": "Nach Updates suchen",
+    "checking_updates": "Wird geprüft…",
+    "up_to_date": "Bereits aktuell",
+    "update_error": "Netzwerkfehler",
+    "release_notes": "Versionshinweise"
   },
   "entry": {
     "new_entry": "Neuer Eintrag",
@@ -571,10 +578,19 @@
   },
   "update": {
     "available": "Update verfügbar",
+    "whats_new": "Neuigkeiten",
+    "no_notes": "Keine Versionshinweise.",
     "installing": "Wird installiert…",
     "install": "Installieren",
     "later": "Später",
     "dismiss": "Ignorieren"
+  },
+  "changelog": {
+    "title": "Versionshinweise",
+    "error": "Versionshinweise konnten nicht geladen werden.",
+    "empty": "Keine Versionen gefunden.",
+    "current": "Aktuell",
+    "no_notes": "Keine Hinweise für diese Version."
   },
   "themes": {
     "dark": "Dunkel",

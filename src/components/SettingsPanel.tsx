@@ -64,7 +64,7 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose, dbP
 
   return (
     <div className="overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
-      <div className="modal" style={{ width: 660, maxHeight: "86vh", display: "flex", flexDirection: "column" }}>
+      <div className="modal" style={{ width: 660, height: "86vh", maxHeight: 760, display: "flex", flexDirection: "column" }}>
         {/* Header */}
         <div className="modal-header">
           <div style={{ width: 32, height: 32, background: "var(--accent-dim)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -242,7 +242,7 @@ function AdvancedThemeEditor({ currentPreset, customVars, onChange, onReset }: {
   );
 }
 
-// ── Sécurité ──────────────────────────────────────────────────────────────────
+// ── Security ──────────────────────────────────────────────────────────────────
 function SecuriteTab({ draft, update }: { draft: AppSettings; update: (p: Partial<AppSettings>) => void }) {
   const { t } = useTranslation();
   const QUICK = [5, 15, 30, 60];
@@ -647,7 +647,7 @@ function AuthTab({ settings: _settings }: { settings: AppSettings }) {
         {t("settings.auth.intro")}
       </div>
 
-      {/* ── Biométrie ── */}
+      {/* ── Biometrics ── */}
       <AuthCard
         icon={<FingerprintIcon size={18} />}
         title={t("settings.auth.biometric")}
@@ -924,6 +924,11 @@ function TagRow({ name, color, onColorChange, onRemove }: {
   );
 }
 
+const TAG_PALETTE = [
+  "#6366f1", "#8b5cf6", "#ec4899", "#ef4444", "#f97316",
+  "#eab308", "#06b6d4", "#14b8a6", "#84cc16", "#a78bfa",
+];
+
 function CategoriesTab({ draft, update }: { draft: AppSettings; update: (p: Partial<AppSettings>) => void }) {
   const { t } = useTranslation();
   const [newCat, setNewCat] = useState("");
@@ -937,7 +942,10 @@ function CategoriesTab({ draft, update }: { draft: AppSettings; update: (p: Part
   const addCat = () => {
     const name = newCat.trim();
     if (!name || allCustom.includes(name) || BUILTIN_CATEGORIES.includes(name)) return;
-    update({ customCategories: [...allCustom, name] });
+    // Pick the first palette color not already used by any tag
+    const usedColors = new Set(Object.values(tagColors).map(c => c.toLowerCase()));
+    const autoColor = TAG_PALETTE.find(c => !usedColors.has(c)) ?? TAG_PALETTE[allCustom.length % TAG_PALETTE.length];
+    update({ customCategories: [...allCustom, name], tagColors: { ...tagColors, [name]: autoColor } });
     setNewCat("");
   };
 
@@ -963,10 +971,10 @@ function CategoriesTab({ draft, update }: { draft: AppSettings; update: (p: Part
 
       <div>
         <div className="field-label" style={{ marginBottom: 8 }}>{t("settings.tags_tab.my_custom_tags")}</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center" }}>
           <input className="input" placeholder={t("settings.tags_tab.new_tag_placeholder")} value={newCat}
             onChange={e => setNewCat(e.target.value)} onKeyDown={e => e.key === "Enter" && addCat()} />
-          <button className="btn btn-primary btn-sm" onClick={addCat} disabled={!newCat.trim()}>
+          <button className="btn btn-primary" onClick={addCat} disabled={!newCat.trim()} style={{ flexShrink: 0 }}>
             <PlusIcon size={13} /> {t("settings.tags_tab.add")}
           </button>
         </div>
@@ -984,7 +992,7 @@ function CategoriesTab({ draft, update }: { draft: AppSettings; update: (p: Part
   );
 }
 
-// ── Coffre (Sauvegarde + Compression + Coffres récents) ───────────────────────
+// ── Vault (Backup + Compression + Recent vaults) ──────────────────────────────
 function CoffreTab({ draft, update, dbPath }: {
   draft: AppSettings;
   update: (p: Partial<AppSettings>) => void;
@@ -994,7 +1002,7 @@ function CoffreTab({ draft, update, dbPath }: {
   const [backupMsg, setBackupMsg] = useState("");
   const [backupError, setBackupError] = useState("");
   const [backing, setBacking] = useState(false);
-  // Initialise depuis la valeur stockée si ce n'est pas un preset
+  // Initialise from stored value if it is not a preset
   const PRESET_HOURS = [0.5, 1, 6, 24, 168];
   const [customMinutes, setCustomMinutes] = useState<string>(() =>
     PRESET_HOURS.includes(draft.backupIntervalHours) || draft.backupIntervalHours <= 0
@@ -1237,25 +1245,6 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
 
   const [confirmReset, setConfirmReset] = useState(false);
 
-  // ── Update check ────────────────────────────────────────────────────────────
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateResult, setUpdateResult] = useState<
-    null | { version: string; notes?: string } | "up_to_date" | string
-  >(null);
-
-  const handleCheckUpdate = async () => {
-    setCheckingUpdate(true);
-    setUpdateResult(null);
-    try {
-      const result = await invoke<{ version: string; notes?: string } | null>("check_update");
-      setUpdateResult(result ?? "up_to_date");
-    } catch (e) {
-      setUpdateResult(`${t("common.error")}: ${String(e)}`);
-    } finally {
-      setCheckingUpdate(false);
-    }
-  };
-
   return (
     <div className="modal-body" style={{ gap: 18 }}>
 
@@ -1340,43 +1329,7 @@ function SystemeTab({ draft, update, onReset }: { draft: AppSettings; update: (p
 
       <div className="divider" />
 
-      {/* Mises à jour */}
-      <SettingRow
-        icon={<RefreshIcon size={15} />}
-        label={t("settings.system.updates")}
-        description={t("settings.system.updates_desc")}
-      >
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => update({ autoUpdateEnabled: true })}  className={draft.autoUpdateEnabled  ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.enabled_f")}</button>
-          <button onClick={() => update({ autoUpdateEnabled: false })} className={!draft.autoUpdateEnabled ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm"}>{t("common.disabled_f")}</button>
-        </div>
-      </SettingRow>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={handleCheckUpdate}
-          disabled={checkingUpdate}
-        >
-          <RefreshIcon size={12} />
-          {checkingUpdate ? t("settings.system.checking") : t("settings.system.check_now")}
-        </button>
-        {updateResult === "up_to_date" && (
-          <span style={{ fontSize: 11, color: "var(--text-2)" }}>{t("settings.system.no_update")}</span>
-        )}
-        {updateResult && typeof updateResult === "object" && (
-          <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 500 }}>
-            {t("settings.system.update_available_v", { version: updateResult.version })}
-          </span>
-        )}
-        {updateResult && typeof updateResult === "string" && updateResult !== "up_to_date" && (
-          <span style={{ fontSize: 11, color: "var(--danger)" }}>{updateResult}</span>
-        )}
-      </div>
-
-      <div className="divider" />
-
-      {/* Réinitialisation */}
+      {/* Reset */}
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-1)", display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <RefreshIcon size={15} /> {t("settings.system.reset_settings")}
