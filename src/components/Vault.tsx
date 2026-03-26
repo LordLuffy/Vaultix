@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { type PasswordEntry, type DatabaseMeta, type EntryType, STRENGTH_COLORS, STRENGTH_LABELS, DEFAULT_SHORTCUTS, parseShortcut } from "../types";
+import { type PasswordEntry, type DatabaseMeta, type EntryType, STRENGTH_COLORS, DEFAULT_SHORTCUTS, parseShortcut } from "../types";
 import { type AppSettings } from "../hooks/useSettings";
 import { detectProtocol, getDisplayHost } from "../utils/protocol";
 import EntryPanel from "./EntryPanel";
@@ -50,6 +51,7 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
 };
 
 export default function Vault({ dbMeta, dbPath, settings, onSettingsChange, onLock, onClose }: Props) {
+  const { t } = useTranslation();
   const [entries, setEntries] = useState<PasswordEntry[]>([]);
   const [category, setCategory] = useState<Category>("all");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null); // null = all folders
@@ -224,14 +226,14 @@ const loadEntries = useCallback(async () => {
         if (window.getSelection()?.isCollapsed === false) return;
         e.preventDefault();
         const entry = entriesRef.current.find(x => x.id === selectedId);
-        if (entry?.password) copyToClipboard(entry.password, "Mot de passe");
+        if (entry?.password) copyToClipboard(entry.password, t("entry.password"));
         return;
       }
 
       if (key === sc.copy_username && selectedId) {
         e.preventDefault();
         const entry = entriesRef.current.find(x => x.id === selectedId);
-        if (entry?.username) copyToClipboard(entry.username, "Identifiant");
+        if (entry?.username) copyToClipboard(entry.username, t("entry.username"));
         return;
       }
 
@@ -246,7 +248,7 @@ const loadEntries = useCallback(async () => {
         if (window.getSelection()?.isCollapsed === false) return;
         e.preventDefault();
         const entry = entriesRef.current.find(x => x.id === selectedId);
-        if (entry) { setCopiedEntry(entry); showToast("Fiche copiée"); }
+        if (entry) { setCopiedEntry(entry); showToast(t("vault.entry_copied")); }
         return;
       }
 
@@ -281,9 +283,9 @@ const loadEntries = useCallback(async () => {
       })
         .then(() => {
           localStorage.setItem(lastKey, String(Date.now()));
-          showToast("Sauvegarde automatique effectuée ✓");
+          showToast(t("vault.backup_done"));
         })
-        .catch(e => showToast(`Sauvegarde échouée : ${e}`));
+        .catch(e => showToast(t("vault.backup_failed", { error: e })));
     }
   }, [ // eslint-disable-next-line react-hooks/exhaustive-deps
     settings.backupEnabled, settings.backupPath, settings.backupIntervalHours,
@@ -311,17 +313,17 @@ const loadEntries = useCallback(async () => {
     await writeText(text);
     scheduleClipboardClear();
     const suffix = settings.clipboardClearSeconds > 0
-      ? ` — effacé dans ${settings.clipboardClearSeconds} s` : "";
-    showToast(`${label} copié${suffix}`);
+      ? t("vault.copied_suffix", { seconds: settings.clipboardClearSeconds }) : "";
+    showToast(`${label} ${t("vault.copy_suffix_title")}${suffix}`);
   };
 
   const duplicateEntry = async (entry: PasswordEntry) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id, created_at, updated_at, strength, ...rest } = entry;
-      await invoke("save_entry", { entry: { ...rest, title: rest.title + " (copie)" } });
+      await invoke("save_entry", { entry: { ...rest, title: rest.title + ` (${t("vault.copy_label")})` } });
       await loadEntries();
-      showToast("Fiche dupliquée");
+      showToast(t("vault.entry_duplicated"));
     } catch {}
   };
 
@@ -433,7 +435,7 @@ const dir = sort.dir === "asc" ? 1 : -1;
 
     // Auto-copy password so it's ready to paste after the connection opens
     if (entry.password) {
-      await copyToClipboard(entry.password, "Mot de passe");
+      await copyToClipboard(entry.password, t("entry.password"));
     }
 
     // Extract bare host (strip scheme, user@, trailing port/path)
@@ -457,7 +459,7 @@ const dir = sort.dir === "asc" ? 1 : -1;
           });
         } catch (err) {
           // Surface error as toast so user knows something failed
-          showToast(`Erreur ouverture ${type.toUpperCase()}: ${err}`);
+          showToast(t("vault.error_open", { type: type.toUpperCase(), error: String(err) }));
         }
         return;
 
@@ -470,8 +472,8 @@ const dir = sort.dir === "asc" ? 1 : -1;
           await writeText(entry.password);
           scheduleClipboardClear();
           const suffix = settings.clipboardClearSeconds > 0
-            ? ` — effacé dans ${settings.clipboardClearSeconds} s` : "";
-          showToast(`Mot de passe copié, collez-le dans TeamViewer${suffix}`);
+            ? t("vault.copied_suffix", { seconds: settings.clipboardClearSeconds }) : "";
+          showToast(t("vault.tv_copy_msg", { suffix }));
         }
         openUrl(`teamviewer10://control?device=${tvId}`).catch(() => {});
         return;
@@ -563,8 +565,8 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
   };
 
   const lockLabel = settings.lockTimeoutMinutes > 0
-    ? `Verrouillage auto dans ${settings.lockTimeoutMinutes} min`
-    : "Verrouillage auto désactivé";
+    ? t("vault.auto_lock_in", { minutes: settings.lockTimeoutMinutes })
+    : t("vault.auto_lock_disabled");
 
   const isSearchActive = search.trim().length > 0;
 
@@ -583,14 +585,14 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
         </div>
 
         <div className="sidebar-section">
-          <div className="sidebar-section-label">Navigation</div>
+          <div className="sidebar-section-label">{t("vault.navigation")}</div>
           <button
             className={`sidebar-item ${category === "all" && selectedFolder === null ? "active" : ""}`}
             onClick={() => { setCategory("all"); setSelectedFolder(null); }}
           >
             <span style={{ pointerEvents: "none", display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
               <GridIcon size={16} />
-              Tous
+              {t("vault.all_entries")}
               <span className="count" style={{ background: "rgba(59,130,246,0.14)", color: "var(--accent)" }}>{countFor("all")}</span>
             </span>
           </button>
@@ -613,7 +615,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             onClick={() => { setCategory("favorites"); setSelectedFolder(null); }}
           >
             <StarIcon size={16} />
-            Favoris
+            {t("vault.favorites")}
             <span className="count" style={{ background: "rgba(245,158,11,0.14)", color: "#f59e0b" }}>{countFor("favorites")}</span>
           </button>
           <button
@@ -621,7 +623,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             onClick={() => { setCategory("reused"); setSelectedFolder(null); }}
           >
             <AlertIcon size={16} />
-            Réutilisés
+            {t("vault.reused")}
             <span className="count" style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)" }}>{countFor("reused")}</span>
           </button>
           {expiredCount > 0 && (
@@ -631,14 +633,14 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
               style={{ color: category === "expired" ? undefined : "var(--danger)" }}
             >
               <ClockExpiredIcon size={16} />
-              Expirés
+              {t("vault.expired")}
               <span className="count" style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)" }}>{expiredCount}</span>
             </button>
           )}
         </div>
 
         <div className="sidebar-section">
-          <div className="sidebar-section-label">Tags</div>
+          <div className="sidebar-section-label">{t("vault.tags")}</div>
           {allCategories.map(cat => {
             const color = settings.tagColors?.[cat] ?? "";
             return (
@@ -649,7 +651,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                 style={{ cursor: "pointer" }}
               >
                 {/* Inline color swatch — click opens color picker without navigating */}
-                <label title="Changer la couleur" style={{ flexShrink: 0, cursor: "pointer", position: "relative", display: "flex", alignItems: "center" }} onClick={e => e.stopPropagation()}>
+                <label title={t("vault.change_color")} style={{ flexShrink: 0, cursor: "pointer", position: "relative", display: "flex", alignItems: "center" }} onClick={e => e.stopPropagation()}>
                   <div style={{ width: 12, height: 12, borderRadius: "50%", background: color || "var(--text-3)", border: "1.5px solid var(--border-light)", flexShrink: 0 }} />
                   <input type="color" value={color || "#888888"}
                     onChange={e => { e.stopPropagation(); handleSettingsChange({ tagColors: { ...settings.tagColors, [cat]: e.target.value } }); }}
@@ -670,17 +672,17 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
 
         <div className="sidebar-footer">
           <button className="sidebar-item" onClick={() => setShowGenerator(true)}>
-            <KeyIcon size={16} /> Générateur
+            <KeyIcon size={16} /> {t("vault.generator")}
           </button>
           <button className="sidebar-item" onClick={() => setShowSettings(true)}>
-            <SettingsIcon size={16} /> Paramètres
+            <SettingsIcon size={16} /> {t("vault.settings")}
           </button>
           <div className="divider" />
           <button className="sidebar-item" onClick={doLock} title={lockLabel}>
-            <LockIcon size={16} /> Verrouiller
+            <LockIcon size={16} /> {t("vault.lock")}
           </button>
           <button className="sidebar-item" onClick={doClose} style={{ color: "var(--text-3)" }}>
-            <XIcon size={16} /> Changer de coffre
+            <XIcon size={16} /> {t("vault.change_vault")}
           </button>
           {updateInfo && (
             <UpdateBanner
@@ -700,10 +702,10 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
       <div className="main-content">
         <div className="main-header">
           <h1>
-            {category === "all" ? "Tous les mots de passe"
-              : category === "favorites" ? "Favoris"
-              : category === "reused" ? "Mots de passe réutilisés"
-              : category === "expired" ? "Entrées expirées"
+            {category === "all" ? t("vault.all_entries")
+              : category === "favorites" ? t("vault.favorites")
+              : category === "reused" ? t("vault.reused")
+              : category === "expired" ? t("vault.expired")
               : category}
           </h1>
           <div className="search-wrap">
@@ -711,7 +713,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             <input
               ref={searchRef}
               className="search-input"
-              placeholder="Rechercher…"
+              placeholder={t("vault.search_placeholder")}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -719,14 +721,14 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
               <button
                 style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: "0 4px", lineHeight: 1 }}
                 onClick={() => setSearch("")}
-                title="Effacer la recherche"
+                title={t("vault.clear_search")}
               >
                 <XIcon size={12} />
               </button>
             )}
           </div>
           <button className="btn btn-primary btn-sm" onClick={() => { setSelectedId(null); setPanelMode("new"); }}>
-            <PlusIcon size={13} /> Ajouter
+            <PlusIcon size={13} /> {t("vault.new_entry")}
           </button>
         </div>
 
@@ -734,10 +736,10 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
         <div style={{ display: (category === "reused") ? "none" : "flex", alignItems: "center", gap: 6, padding: "0 16px 10px", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 4 }}>
             {[
-              { label: "A→Z",   field: "title" as SortField,      dir: "asc" as SortDir },
-              { label: "Z→A",   field: "title" as SortField,      dir: "desc" as SortDir },
-              { label: "Récent", field: "updated_at" as SortField, dir: "desc" as SortDir },
-              { label: "Force",  field: "strength" as SortField,   dir: "desc" as SortDir },
+              { label: "A→Z",                    field: "title" as SortField,      dir: "asc" as SortDir },
+              { label: "Z→A",                    field: "title" as SortField,      dir: "desc" as SortDir },
+              { label: t("vault.sort_updated"),  field: "updated_at" as SortField, dir: "desc" as SortDir },
+              { label: t("vault.sort_strength"), field: "strength" as SortField,   dir: "desc" as SortDir },
             ].map(p => {
               const active = sort.field === p.field && sort.dir === p.dir;
               return (
@@ -754,7 +756,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
           </div>
           {isSearchActive && (
             <span style={{ fontSize: 12, color: "var(--text-3)", marginLeft: "auto" }}>
-              {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
+              {t("vault.results", { count: filtered.length })}
             </span>
           )}
         </div>
@@ -766,7 +768,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             value={selectedFolder ?? ""}
             onChange={e => setSelectedFolder(e.target.value === "" ? null : e.target.value)}
           >
-            <option value="">Dossier : Tous</option>
+            <option value="">{t("vault.folder_all")}</option>
             {allFolderPaths.map(f => (
               <option key={f} value={f}>{f}</option>
             ))}
@@ -776,8 +778,8 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value as EntryType | "all")}
           >
-            <option value="all">Type : Tous</option>
-            <option value="login">Site Web</option>
+            <option value="all">{t("vault.all_types")}</option>
+            <option value="login">{t("vault.type_labels.login")}</option>
             <option value="rdp">Remote Desktop (RDP)</option>
             <option value="ssh">SSH</option>
             <option value="ftp">FTP</option>
@@ -785,8 +787,8 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             <option value="vnc">VNC</option>
             <option value="teamviewer">TeamViewer</option>
             <option value="telnet">Telnet</option>
-            <option value="other">Autre</option>
-            <option value="note">Note sécurisée</option>
+            <option value="other">{t("vault.type_labels.other")}</option>
+            <option value="note">{t("vault.type_labels.note")}</option>
           </select>
           {(selectedFolder !== null || typeFilter !== "all") && (
             <button
@@ -794,7 +796,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
               onClick={() => { setSelectedFolder(null); setTypeFilter("all"); }}
               style={{ fontSize: 12 }}
             >
-              ✕ Effacer filtres
+              ✕ {t("vault.clear_filters")}
             </button>
           )}
         </div>
@@ -812,7 +814,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
           {filtered.length === 0 ? (
             <div className="empty-state">
               <LockIcon size={40} />
-              <p>{search ? "Aucun résultat pour votre recherche." : <>Aucune entrée dans cette catégorie.<br/>Cliquez sur «&nbsp;Ajouter&nbsp;» pour commencer.</>}</p>
+              <p>{search ? t("vault.no_results") : <>{t("vault.empty_category")}<br/>{t("vault.click_add")}</>}</p>
             </div>
           ) : (
             <table className="entry-table">
@@ -820,13 +822,13 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                 <tr>
                   <th style={{ width: 28 }}></th>{/* star */}
                   <th onClick={() => toggleSort("title")}>
-                    Titre {sort.field === "title" ? (sort.dir === "asc" ? "▲" : "▼") : ""}
+                    {t("vault.sort_title")} {sort.field === "title" ? (sort.dir === "asc" ? "▲" : "▼") : ""}
                   </th>
-                  <th onClick={() => toggleSort("username")}>Utilisateur {sort.field === "username" ? (sort.dir === "asc" ? "▲" : "▼") : ""}</th>
+                  <th onClick={() => toggleSort("username")}>{t("vault.sort_username")} {sort.field === "username" ? (sort.dir === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => toggleSort("url")}>URL</th>
-                  <th onClick={() => toggleSort("strength")}>Force {sort.field === "strength" ? (sort.dir === "asc" ? "▲" : "▼") : ""}</th>
-                  <th onClick={() => toggleSort("updated_at")}>Modifié {sort.field === "updated_at" ? (sort.dir === "asc" ? "▲" : "▼") : ""}</th>
-                  <th style={{ width: 80 }}>Actions</th>
+                  <th onClick={() => toggleSort("strength")}>{t("vault.sort_strength")} {sort.field === "strength" ? (sort.dir === "asc" ? "▲" : "▼") : ""}</th>
+                  <th onClick={() => toggleSort("updated_at")}>{t("vault.sort_updated")} {sort.field === "updated_at" ? (sort.dir === "asc" ? "▲" : "▼") : ""}</th>
+                  <th style={{ width: 80 }}>{t("vault.col_actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -846,7 +848,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                     <td onClick={e => e.stopPropagation()} style={{ paddingLeft: 6, paddingRight: 0, width: 28 }}>
                       <button
                         className="btn-icon"
-                        title={entry.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                        title={entry.favorite ? t("vault.remove_from_favorites") : t("vault.add_to_favorites")}
                         onClick={() => quickSave(entry, { favorite: !entry.favorite })}
                         style={{ color: entry.favorite ? "#f59e0b" : "var(--text-3)", padding: "2px 3px" }}
                       >
@@ -881,13 +883,13 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                               const isSoon = !isExpired && diff <= 7;
                               if (!isExpired && !isSoon) return null;
                               return (
-                                <span title={isExpired ? `Expiré il y a ${Math.abs(diff)} jour(s)` : `Expire dans ${diff} jour(s)`} style={{
+                                <span title={isExpired ? t("entry.expired_days_ago", { count: Math.abs(diff) }) : t("entry.expires_in_days_short", { count: diff })} style={{
                                   fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700, flexShrink: 0,
                                   background: isExpired ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
                                   color: isExpired ? "var(--danger)" : "var(--warning)",
                                   border: `1px solid ${isExpired ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.3)"}`,
                                 }}>
-                                  {isExpired ? "Expiré" : `${diff}j`}
+                                  {isExpired ? t("entry.expired_badge") : `${diff}d`}
                                 </span>
                               );
                             })()}
@@ -931,14 +933,14 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                         <button
                           className="btn-icon"
                           title={entry.url
-                            ? (entry.entry_type === "rdp" ? "Ouvrir la connexion RDP"
-                              : entry.entry_type === "ssh" ? "Ouvrir une session SSH"
-                              : entry.entry_type === "ftp" ? "Ouvrir le client FTP"
-                              : entry.entry_type === "sftp" ? "Ouvrir la connexion SFTP"
-                              : entry.entry_type === "vnc" ? "Ouvrir la connexion VNC"
-                              : entry.entry_type === "telnet" ? "Ouvrir Telnet"
-                              : "Ouvrir dans le navigateur")
-                            : "Aucune adresse renseignée"}
+                            ? (entry.entry_type === "rdp" ? t("vault.open_rdp")
+                              : entry.entry_type === "ssh" ? t("vault.open_ssh")
+                              : entry.entry_type === "ftp" ? t("vault.open_ftp")
+                              : entry.entry_type === "sftp" ? t("vault.open_sftp")
+                              : entry.entry_type === "vnc" ? t("vault.open_vnc")
+                              : entry.entry_type === "telnet" ? t("vault.open_telnet")
+                              : t("vault.open_browser"))
+                            : t("vault.no_url")}
                           disabled={!entry.url}
                           style={{ opacity: entry.url ? 1 : 0.25 }}
                           onClick={() => openEntry(entry)}
@@ -1004,23 +1006,23 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
           >
             <ContextMenuItem
               icon={<UserIcon size={13} />}
-              label="Copier l'identifiant"
+              label={t("vault.context_copy_username")}
               disabled={!contextMenu.entry.username}
-              onClick={() => { copyToClipboard(contextMenu.entry.username, "Identifiant"); setContextMenu(null); }}
+              onClick={() => { copyToClipboard(contextMenu.entry.username, t("entry.username")); setContextMenu(null); }}
             />
             <ContextMenuItem
               icon={<CopyIcon size={13} />}
-              label="Copier le mot de passe"
-              onClick={() => { copyToClipboard(contextMenu.entry.password, "Mot de passe"); setContextMenu(null); }}
+              label={t("vault.context_copy_password")}
+              onClick={() => { copyToClipboard(contextMenu.entry.password, t("entry.password")); setContextMenu(null); }}
             />
             {contextMenu.entry.totp_secret && (
               <ContextMenuItem
                 icon={<TotpIcon size={13} />}
-                label="Copier le code TOTP"
+                label={t("entry.copy_totp")}
                 onClick={async () => {
                   try {
                     const r = await invoke<{ code: string }>("get_totp_code", { secret: contextMenu.entry.totp_secret });
-                    copyToClipboard(r.code, "Code TOTP");
+                    copyToClipboard(r.code, t("vault.totp_code"));
                   } catch {}
                   setContextMenu(null);
                 }}
@@ -1029,19 +1031,19 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
             {contextMenu.entry.url && (
               <ContextMenuItem
                 icon={<ExternalIcon size={13} />}
-                label="Ouvrir la connexion"
+                label={t("vault.context_open")}
                 onClick={() => { openEntry(contextMenu.entry); setContextMenu(null); }}
               />
             )}
             <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
             <ContextMenuItem
               icon={<EditIcon size={13} />}
-              label="Modifier"
+              label={t("common.edit")}
               onClick={() => { setSelectedId(contextMenu.entry.id); setPanelMode("edit"); setContextMenu(null); }}
             />
             <ContextMenuItem
               icon={<TrashIcon size={13} />}
-              label="Supprimer"
+              label={t("common.delete")}
               danger
               onClick={() => { setPendingDelete(contextMenu.entry); setContextMenu(null); }}
             />
@@ -1080,10 +1082,10 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
           }}>
             <TrashIcon size={16} />
             <span style={{ flex: 1, fontSize: 13, color: "var(--text-1)" }}>
-              Supprimer <strong>«&nbsp;{pendingDelete.title}&nbsp;»</strong> ?
+              {t("vault.delete_confirm", { title: pendingDelete.title })}
             </span>
             <button className="btn btn-ghost btn-sm" onClick={() => setPendingDelete(null)}>
-              Annuler
+              {t("common.cancel")}
             </button>
             <button
               className="btn btn-danger btn-sm"
@@ -1100,7 +1102,7 @@ const selectedEntry = entries.find(e => e.id === selectedId) ?? null;
                 } catch {}
               }}
             >
-              <TrashIcon size={12} /> Supprimer
+              <TrashIcon size={12} /> {t("common.delete")}
             </button>
           </div>
         </>
@@ -1141,13 +1143,14 @@ function ContextMenuItem({ icon, label, onClick, disabled, danger }: {
 
 // ── URL cell ──────────────────────────────────────────────────────────────────
 function UrlCell({ url, onOpen, onCopy: _onCopy }: { url: string; entryType?: string; onOpen: () => void; onCopy: () => void }) {
+  const { t } = useTranslation();
   // Show a clean host / address — strip scheme for display
   const isHttp = url.startsWith("http://") || url.startsWith("https://") || (!url.includes("://") && url.includes("."));
   const host = isHttp ? getDisplayHost(url) : url.replace(/^[a-z][a-z0-9+\-.]*:\/\//i, "");
   return (
     <div
       style={{ display: "flex", alignItems: "center", gap: 6 }}
-      title="Double-cliquer pour ouvrir"
+      title={t("vault.double_click_open")}
       onDoubleClick={e => { e.stopPropagation(); onOpen(); }}
     >
       <span style={{ color: "var(--accent)", fontSize: 12,
@@ -1169,17 +1172,25 @@ function getFavicon(url: string): React.ReactNode {
 }
 
 function formatDate(ts: number): string {
-  return new Date(ts * 1000).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  return new Date(ts * 1000).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 function StrengthBadge({ score }: { score: number }) {
+  const { t } = useTranslation();
   const color = STRENGTH_COLORS[score] ?? "#64748b";
+  const strengthLabels = [
+    t("setup.strength.very_weak"),
+    t("setup.strength.weak"),
+    t("setup.strength.medium"),
+    t("setup.strength.strong"),
+    t("setup.strength.very_strong"),
+  ];
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <div style={{ display: "flex", gap: 2 }}>
         {[0,1,2,3,4].map(i => <div key={i} style={{ width: 14, height: 4, borderRadius: 2, background: i <= score ? color : "rgba(255,255,255,0.08)" }} />)}
       </div>
-      <span style={{ fontSize: 11, color, minWidth: 52 }}>{STRENGTH_LABELS[score]}</span>
+      <span style={{ fontSize: 11, color, minWidth: 52 }}>{strengthLabels[score]}</span>
     </div>
   );
 }
@@ -1189,6 +1200,7 @@ function CopyDropdown({ entry, onCopy }: {
   entry: PasswordEntry;
   onCopy: (text: string, label: string) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState({ right: 0, top: 0 });
   const chevronRef = useRef<HTMLButtonElement>(null);
@@ -1215,16 +1227,16 @@ function CopyDropdown({ entry, onCopy }: {
   const items: { label: string; value: string }[] = [];
   const type = entry.entry_type ?? "login";
   if (type === "ssh") {
-    if (entry.username) items.push({ label: "Identifiant", value: entry.username });
+    if (entry.username) items.push({ label: t("entry.username"), value: entry.username });
     const priv = entry.extra_fields?.find(([k]) => k === "private_key")?.[1] ?? "";
     const pub  = entry.extra_fields?.find(([k]) => k === "public_key")?.[1]  ?? "";
-    if (priv) items.push({ label: "Clé privée", value: priv });
-    if (pub)  items.push({ label: "Clé publique", value: pub });
+    if (priv) items.push({ label: t("entry.privateKey"), value: priv });
+    if (pub)  items.push({ label: t("entry.publicKey"), value: pub });
   } else if (type === "note") {
-    if (entry.notes) items.push({ label: "Contenu", value: entry.notes });
+    if (entry.notes) items.push({ label: t("vault.content"), value: entry.notes });
   } else {
-    if (entry.username) items.push({ label: "Identifiant", value: entry.username });
-    if (entry.password) items.push({ label: "Mot de passe", value: entry.password });
+    if (entry.username) items.push({ label: t("entry.username"), value: entry.username });
+    if (entry.password) items.push({ label: t("entry.password"), value: entry.password });
   }
 
   const primary = items[0];
@@ -1233,7 +1245,7 @@ function CopyDropdown({ entry, onCopy }: {
     <div ref={containerRef} style={{ position: "relative", display: "flex" }} className="copy-split">
       <button
         className="btn-icon"
-        title={primary ? `Copier ${primary.label.toLowerCase()}` : "Copier"}
+        title={primary ? `${t("common.copy")} ${primary.label.toLowerCase()}` : t("common.copy")}
         disabled={!primary}
         style={{ opacity: primary ? 1 : 0.25 }}
         onClick={e => { e.stopPropagation(); if (primary) onCopy(primary.value, primary.label); }}
@@ -1243,7 +1255,7 @@ function CopyDropdown({ entry, onCopy }: {
       <button
         ref={chevronRef}
         className="btn-icon"
-        title="Plus d'options"
+        title={t("vault.more_options")}
         onClick={handleToggle}
       >
         <ChevronDownIcon size={10} />
@@ -1276,7 +1288,7 @@ function CopyDropdown({ entry, onCopy }: {
               onClick={e => { e.stopPropagation(); onCopy(item.value, item.label); setOpen(false); }}
             >
               <CopyIcon size={13} />
-              Copier {item.label.toLowerCase()}
+              {t("common.copy")} {item.label.toLowerCase()}
             </button>
           ))}
         </div>
@@ -1417,6 +1429,7 @@ function ReusedPasswordsView({ groups, selectedId, onSelect, onCopy }: {
   onSelect: (e: PasswordEntry) => void;
   onCopy: (text: string, label: string) => void;
 }) {
+  const { t } = useTranslation();
   if (groups.length === 0) {
     return (
       <div className="entry-list">
@@ -1424,7 +1437,7 @@ function ReusedPasswordsView({ groups, selectedId, onSelect, onCopy }: {
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
-          <p>Aucun mot de passe réutilisé détecté.<br/>Tous vos mots de passe sont uniques.</p>
+          <p>{t("vault.no_reused_detected")}<br/>{t("vault.all_unique")}</p>
         </div>
       </div>
     );
@@ -1434,13 +1447,13 @@ function ReusedPasswordsView({ groups, selectedId, onSelect, onCopy }: {
     <div className="entry-list" style={{ padding: "0 16px 16px" }}>
       <div style={{ fontSize: 12, color: "#f97316", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
         <AlertIcon size={13} />
-        {groups.length} groupe{groups.length > 1 ? "s" : ""} de mots de passe partagés entre {groups.reduce((a, g) => a + g.length, 0)} entrées
+        {t("vault.reused_summary", { groups: groups.length, entries: groups.reduce((a, g) => a + g.length, 0) })}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {groups.map((group, gi) => (
           <div key={gi} style={{ border: "1px solid #f9731644", borderRadius: 10, overflow: "hidden" }}>
             <div style={{ background: "#f9731608", padding: "8px 12px", fontSize: 11, color: "#f97316", fontWeight: 600, borderBottom: "1px solid #f9731622" }}>
-              Même mot de passe — {group.length} entrées
+              {t("vault.same_password", { count: group.length })}
             </div>
             {group.map(entry => (
               <div
@@ -1466,7 +1479,7 @@ function ReusedPasswordsView({ groups, selectedId, onSelect, onCopy }: {
                   <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.title}</div>
                   {entry.username && <div style={{ fontSize: 11, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.username}</div>}
                 </div>
-                <button className="btn-icon" title="Copier le mot de passe" onClick={ev => { ev.stopPropagation(); onCopy(entry.password, "Mot de passe"); }}>
+                <button className="btn-icon" title={t("vault.context_copy_password")} onClick={ev => { ev.stopPropagation(); onCopy(entry.password, t("entry.password")); }}>
                   <CopyIcon size={13} />
                 </button>
               </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   dbPath: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
       await invoke("unlock_database", { masterPassword: password });
       onUnlocked();
     } catch {
-      setError("Mot de passe incorrect.");
+      setError(t("unlock.wrong_password"));
       setPassword("");
       inputRef.current?.focus();
     } finally {
@@ -67,7 +69,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
       await invoke("unlock_with_totp", { totpCode });
       onUnlocked();
     } catch (e) {
-      setError("Code TOTP incorrect ou expiré.");
+      setError(t("unlock.totp_wrong"));
       setTotpCode("");
       totpRef.current?.focus();
     } finally {
@@ -109,7 +111,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
             <>
               {/* Master password */}
               <div className="field-group">
-                <label className="field-label">Mot de passe maître</label>
+                <label className="field-label">{t("unlock.master_password")}</label>
                 <div className="input-wrap">
                   <input
                     ref={inputRef}
@@ -118,7 +120,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleUnlock()}
-                    placeholder="Entrer le mot de passe maître"
+                    placeholder={t("unlock.enter_password")}
                     autoComplete="current-password"
                     disabled={loading}
                   />
@@ -139,7 +141,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
 
               <button className="btn btn-primary" onClick={handleUnlock} disabled={loading || !password}>
                 {loading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : null}
-                {loading ? "Déverrouillage..." : "Déverrouiller"}
+                {loading ? t("unlock.unlocking") : t("unlock.unlock")}
               </button>
 
               {/* Dynamic alternative methods */}
@@ -147,7 +149,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
                     <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-                    <span style={{ fontSize: 11, color: "var(--text-3)" }}>ou</span>
+                    <span style={{ fontSize: 11, color: "var(--text-3)" }}>{t("common.or")}</span>
                     <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
                   </div>
 
@@ -161,7 +163,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
                   {totpRegistered && (
                     <button className="btn btn-ghost" onClick={openTotp} disabled={loading}>
                       <TotpIcon size={15} />
-                      Code d'authentification (TOTP)
+                      {t("unlock.totp_button")}
                     </button>
                   )}
                 </div>
@@ -172,10 +174,10 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
               {/* TOTP unlock form */}
               <div style={{ textAlign: "center", marginBottom: 8 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-1)", marginBottom: 4 }}>
-                  Code d'authentification
+                  {t("unlock.totp_title")}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-3)" }}>
-                  Entrez le code à 6 chiffres de votre application
+                  {t("unlock.totp_subtitle")}
                 </div>
               </div>
 
@@ -202,11 +204,11 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
 
               <button className="btn btn-primary" onClick={handleTotpUnlock} disabled={loading || totpCode.length !== 6}>
                 {loading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : null}
-                {loading ? "Vérification..." : "Vérifier"}
+                {loading ? t("unlock.verifying") : t("unlock.verify")}
               </button>
 
               <button className="btn btn-ghost btn-sm" onClick={closeTotp} disabled={loading}>
-                ← Retour au mot de passe
+                {t("common.back_to_password")}
               </button>
             </>
           )}
@@ -214,7 +216,7 @@ export default function UnlockScreen({ dbPath, onUnlocked, onClose }: Props) {
           <div className="divider" />
 
           <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ color: "var(--text-3)" }}>
-            Changer de base de données
+            {t("unlock.change_database")}
           </button>
         </div>
       </div>

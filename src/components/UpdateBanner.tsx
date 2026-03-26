@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   version: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function UpdateBanner({ version, notes, onDismiss }: Props) {
+  const { t } = useTranslation();
   const [installing, setInstalling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,7 @@ export default function UpdateBanner({ version, notes, onDismiss }: Props) {
         <span style={{ fontSize: 14 }}>🔄</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-1)" }}>
-            Mise à jour disponible
+            {t("update.available")}
           </div>
           <div style={{ fontSize: 11, color: "var(--accent)", fontWeight: 500 }}>
             v{version}
@@ -56,7 +58,7 @@ export default function UpdateBanner({ version, notes, onDismiss }: Props) {
             padding: "2px 4px",
             lineHeight: 1,
           }}
-          title="Ignorer"
+          title={t("update.dismiss")}
         >
           ✕
         </button>
@@ -93,7 +95,7 @@ export default function UpdateBanner({ version, notes, onDismiss }: Props) {
           disabled={installing}
           style={{ fontSize: 11 }}
         >
-          Plus tard
+          {t("update.later")}
         </button>
         <button
           className="btn btn-primary btn-sm"
@@ -101,7 +103,7 @@ export default function UpdateBanner({ version, notes, onDismiss }: Props) {
           disabled={installing}
           style={{ fontSize: 11, minWidth: 80 }}
         >
-          {installing ? "Installation…" : "Installer"}
+          {installing ? t("update.installing") : t("update.install")}
         </button>
       </div>
     </div>
