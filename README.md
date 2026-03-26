@@ -168,4 +168,10 @@ Vaultix/
 
 ## Licence
 
-Ce projet est distribué sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour les détails.
+Ce projet est distribué sous licence **GPL-3.0**. Voir le fichier [LICENSE](LICENSE) pour les détails.
+
+En résumé :
+- ✅ Tu peux utiliser, modifier et redistribuer librement ce logiciel
+- ✅ Tu peux fork et améliorer le projet
+- ⚠️ Toute version modifiée doit également être publiée sous GPL-3.0
+- ❌ Impossible de forker puis de revendre une version propriétaire fermée
