@@ -18,7 +18,7 @@
 
 <p align="center">
 <!-- STACK:START -->
-<img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" />
+<img alt="Tauri" src="https://img.shields.io/badge/Tauri-2.10.1-24C8DB?style=for-the-badge&logo=tauri&logoColor=white" />
 <img alt="Rust" src="https://img.shields.io/badge/Rust-stable-000000?style=for-the-badge&logo=rust" />
 <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.5.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
 <img alt="React" src="https://img.shields.io/badge/React-18.3.1-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
